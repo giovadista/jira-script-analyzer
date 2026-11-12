@@ -54,9 +54,18 @@ export function maskNonCode(source){
   }
   return out.join("");
 }
-function location(source,offset){
-  const prior=source.slice(0,offset),last=prior.lastIndexOf("\n");
-  return {line:prior.split("\n").length,column:offset-last};
+function lineIndex(source){
+  const starts=[0];
+  for(let i=0;i<source.length;i++)if(source.charCodeAt(i)===10)starts.push(i+1);
+  return starts;
+}
+function location(starts,offset){
+  let low=0,high=starts.length-1;
+  while(low<=high){
+    const mid=(low+high)>>>1;
+    if(starts[mid]<=offset)low=mid+1;else high=mid-1;
+  }
+  return {line:high+1,column:offset-starts[high]+1};
 }
 function suppressed(source,ruleId,line){
   // Inline suppression of the exact rule: // jsa-ignore JSA003
@@ -72,6 +81,7 @@ function suppressed(source,ruleId,line){
 export function analyze(source,filename="script.groovy",disabled=[]){
   const masked=maskNonCode(source);
   const ignored=new Set(disabled);
+  const starts=lineIndex(source);
   const results=[];
   for(const rule of RULES){
     if(ignored.has(rule.id))continue;
@@ -81,7 +91,7 @@ export function analyze(source,filename="script.groovy",disabled=[]){
       const offset=match.index;
       // For credential rules confirm the variable identifier begins in executable code.
       if(rule.raw&&masked[offset]===" ")continue;
-      const loc=location(source,offset);
+      const loc=location(starts,offset);
       if(suppressed(source,rule.id,loc.line))continue;
       results.push({file:filename,...loc,rule:rule.id,severity:rule.severity,
                     category:rule.category,message:rule.label,help:rule.help});
