@@ -18,7 +18,7 @@ The browser interface is in [docs/index.html](docs/index.html). It is a static a
 
 Note: This Pages address will not work until Pages is enabled and the first deployment succeeds. Keep employer/client code out of the public repository. The browser app can process local files, but workplace policy still applies.
 
-**Browser features:** paste Groovy; select up to 30 local `.groovy` files (1 MB each); enable/disable individual rules; filter and search findings; see rule-specific review guidance; export JSON, CSV or SARIF reports. For deliberate exceptions, add `// jsa-ignore JSA003` on the finding line or on a standalone comment line immediately before it. The browser and Python analyzers use independently implemented heuristic checks and may differ in edge cases.
+**Browser features:** paste Groovy; select up to 30 local `.groovy` files (1 MB each); enable/disable individual rules; filter and search findings; see rule-specific review guidance; export JSON, HTML, CSV or SARIF reports. For deliberate exceptions, add `// jsa-ignore JSA003` on the finding line or on a standalone comment line immediately before it. The browser and Python analyzers use independently implemented heuristic checks and may differ in edge cases.
 
 **Browser engine tests:** GitHub Actions runs `npm test` with Node.js. Node is needed only to develop/test the browser engine outside GitHub; end users do not install anything.
 
