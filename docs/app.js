@@ -1,4 +1,5 @@
 import {RULES,SAMPLE,reportOf,toSarif,toCsv,toHtml} from "./engine.js";
+import {analyzeCloudFiles,analyzeAutomationJson,assessMigration} from "./cloud.js";
 const el=id=>document.getElementById(id);
 let report=null;
 const outputButtons=["download","downloadHtml","downloadCsv","downloadSarif"];
@@ -8,32 +9,80 @@ for(const rule of RULES){
   const cb=document.createElement("input");cb.type="checkbox";cb.checked=true;cb.value=rule.id;
   label.append(cb,document.createTextNode(rule.id+" · "+rule.label+(rule.target?" [Jira "+rule.target+"]":"")));el("rules").append(label);
 }
-el("sample").addEventListener("click",()=>{el("source").value=SAMPLE;el("files").value="";el("fileLabel").textContent="No files selected";selectedFiles.length=0;el("error").hidden=true;});
-el("clear").addEventListener("click",()=>{el("source").value="";el("files").value="";selectedFiles.length=0;el("fileLabel").textContent="No files selected";report=null;el("severityFilter").value="ALL";el("search").value="";render();el("error").hidden=true;});
-el("files").addEventListener("change",e=>{selectedFiles.length=0;selectedFiles.push(...e.target.files);el("fileLabel").textContent=selectedFiles.length?selectedFiles.length+" file(s) selected":"No files selected";});
+const MODE_EXAMPLES={
+ "scriptrunner-cloud":'// Synthetic ScriptRunner Cloud example\nimport com.atlassian.jira.component.ComponentAccessor\n// DC-only code above is not available in Cloud scripts\nget("/rest/api/3/issue/DEMO-1").asObject(Map)\n',
+ "automation-cloud":JSON.stringify({rules:[{name:"Synthetic example",state:"DISABLED",components:[{type:"ACTION",value:"send-web-request",configuration:{field:"customfield_10001",owner:"sample-account"}}]}]},null,2),
+ "dc-to-cloud":'// Synthetic DC listener to assess before Jira Cloud migration\nimport com.atlassian.jira.component.ComponentAccessor\nimport java.io.File\n// Review Jira API dependencies, filesystem access and username-based user lookups\ndef issueManager = ComponentAccessor.issueManager\n',
+ "data-center":SAMPLE
+};
+const hints={
+ "scriptrunner-cloud":"Cloud script source patterns, including REST authentication and legacy Data Center Java dependencies. Not a parser or runtime validator.",
+ "automation-cloud":"Load a Jira Cloud Automation JSON export. Identifies review candidates; does not execute/import rules or expose field values.",
+ "dc-to-cloud":"Assess Groovy scripts for Java API, host access, identity and ScriptRunner parity indicators. This is NOT an automatic effort estimate.",
+ "data-center":"Existing offline Jira Data Center Groovy scanner and version-specific rules."
+};
+function updateMode(){
+ const mode=el("analysisMode").value;
+ el("cloudLanguageRow").hidden=mode!=="scriptrunner-cloud";
+ el("jiraVersionRow").hidden=mode!=="data-center";
+ el("dcRules").hidden=mode!=="data-center";
+ el("modeHint").textContent=hints[mode];
+ el("sourceLabel").textContent=mode==="automation-cloud"?"Automation export JSON":"Script source";
+ el("source").placeholder=mode==="automation-cloud"?"Paste an Automation JSON export...":"Paste script source...";
+ el("files").accept=mode==="automation-cloud"?".json,application/json":mode==="scriptrunner-cloud"?".groovy,.js,.ts,text/plain":".groovy,text/plain";
+ el("files").multiple=mode!=="automation-cloud";
+ el("source").value="";
+ el("files").value="";
+ selectedFiles.length=0;
+ el("fileLabel").textContent="No files selected";
+ report=null;render();
+}
+el("analysisMode").addEventListener("change",updateMode);
+el("sample").addEventListener("click",()=>{
+ el("source").value=MODE_EXAMPLES[el("analysisMode").value];
+ el("files").value="";selectedFiles.length=0;el("fileLabel").textContent="No files selected";el("error").hidden=true;
+});
+el("clear").addEventListener("click",()=>{
+ el("source").value="";el("files").value="";selectedFiles.length=0;el("fileLabel").textContent="No files selected";
+ report=null;el("severityFilter").value="ALL";el("search").value="";render();el("error").hidden=true;
+});
+el("files").addEventListener("change",e=>{
+ selectedFiles.length=0;selectedFiles.push(...e.target.files);
+ el("fileLabel").textContent=selectedFiles.length?selectedFiles.length+" file(s) selected":"No files selected";
+});
 el("severityFilter").addEventListener("change",render);
 el("search").addEventListener("input",render);
 el("run").addEventListener("click",async()=>{
-  el("error").hidden=true;
-  try {
-    const files=[];
-    if(selectedFiles.length){
-      if(selectedFiles.length>30)throw new Error("Select at most 30 Groovy files.");
-      for(const file of selectedFiles){
-        if(!file.name.toLowerCase().endsWith(".groovy"))throw new Error("Only .groovy files are accepted.");
-        if(file.size>1024*1024)throw new Error("Each script must be smaller than 1 MB.");
-        files.push({name:file.name,content:await file.text()});
-      }
-    }else{
-      const content=el("source").value;
-      if(!content.trim())throw new Error("Paste Groovy code or choose local .groovy files.");
-      if(content.length>1024*1024)throw new Error("Pasted script must be smaller than 1 MB.");
-      files.push({name:"pasted-script.groovy",content});
-    }
-    const disabled=[...el("rules").querySelectorAll('input[type="checkbox"]:not(:checked)')].map(c=>c.value);
-    report=reportOf(files,disabled,{jiraVersion:el("jiraVersion").value});
-    el("severityFilter").value="ALL";el("search").value="";render();
-  }catch(error){el("error").textContent=error.message;el("error").hidden=false;}
+ el("error").hidden=true;
+ try{
+   const mode=el("analysisMode").value;
+   const language=el("cloudLanguage").value;
+   const files=[];
+   if(selectedFiles.length){
+     if(selectedFiles.length>(mode==="automation-cloud"?1:30))throw new Error("Too many files selected for this analysis mode.");
+     for(const file of selectedFiles){
+       const suffixes=mode==="automation-cloud"?[".json"]:
+         mode==="scriptrunner-cloud"?[".groovy",".js",".ts"]:[".groovy"];
+       if(!suffixes.some(s=>file.name.toLowerCase().endsWith(s)))
+         throw new Error("Select supported "+suffixes.join(", ")+" files only.");
+       if(file.size>(mode==="automation-cloud"?5:1)*1024*1024)throw new Error("File exceeds safe browser size limit.");
+       files.push({name:file.name,content:await file.text()});
+     }
+   }else{
+     const content=el("source").value;
+     if(!content.trim())throw new Error("Paste source code / JSON or choose local files.");
+     if(content.length>(mode==="automation-cloud"?5:1)*1024*1024)throw new Error("Input exceeds safe browser size limit.");
+     files.push({name:mode==="automation-cloud"?"pasted-automation.json":mode==="scriptrunner-cloud"?"pasted-cloud."+({groovy:"groovy",javascript:"js",typescript:"ts"}[language]):"pasted-script.groovy",content});
+   }
+   if(mode==="automation-cloud")report=analyzeAutomationJson(files[0].content,files[0].name);
+   else if(mode==="dc-to-cloud")report=assessMigration(files);
+   else if(mode==="scriptrunner-cloud")report=analyzeCloudFiles(files,language);
+   else{
+     const disabled=[...el("rules").querySelectorAll('input[type="checkbox"]:not(:checked)')].map(c=>c.value);
+     report=reportOf(files,disabled,{jiraVersion:el("jiraVersion").value});
+   }
+   el("severityFilter").value="ALL";el("search").value="";render();
+ }catch(error){el("error").textContent=error.message;el("error").hidden=false;}
 });
 function downloadFile(text,name,type){
   const blob=new Blob([text],{type});
@@ -56,7 +105,7 @@ el("downloadSarif").addEventListener("click",()=>{
 function render(){
   for(const id of ["total","high","medium","low"])el(id).textContent=report?(id==="total"?report.findings.length:report.counts[id.toUpperCase()]):"—";
   for(const button of outputButtons)el(button).disabled=!report;
-  el("scanSummary").textContent=report?report.files_scanned+" script(s) analyzed locally. Target: "+report.target_jira+".":"Run an analysis to see results.";
+  el("scanSummary").textContent=report?report.files_scanned+" file(s) analyzed locally. Mode: "+(report.mode||"data-center")+(report.rules_scanned!==undefined?"; "+report.rules_scanned+" automation rules":"")+".":"Run an analysis to see results.";
   const tbody=el("findings");tbody.replaceChildren();
   const query=el("search").value.toLocaleLowerCase().trim();
   const filtered=report?.findings.filter(f=>(el("severityFilter").value==="ALL"||f.severity===el("severityFilter").value)&&
@@ -70,6 +119,10 @@ function render(){
     const messageCell=row.insertCell(),main=document.createElement("strong"),recommendation=document.createElement("p");
     main.textContent=finding.message;recommendation.className="recommendation";recommendation.textContent=finding.help;
     messageCell.append(main,recommendation);
+    if(finding.effort){const effort=document.createElement("small");effort.textContent="Migration effort indicator: "+finding.effort;messageCell.append(effort);}
+    if(finding.reference){const a=document.createElement("a");a.href=finding.reference;a.rel="noopener noreferrer";a.target="_blank";a.textContent=" · Documentation";messageCell.append(a);}
   }
 }
 render();
+
+updateMode();
