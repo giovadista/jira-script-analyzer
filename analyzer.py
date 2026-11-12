@@ -11,7 +11,7 @@ import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 SEVERITY = {"LOW": 1, "MEDIUM": 2, "HIGH": 3}
 SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "build", "target"}
 
@@ -38,6 +38,11 @@ RULES = (
     ("JSA008", "MEDIUM", r"\bcatch\s*\(\s*(?:Exception|Throwable)\s+\w+\s*\)", "Broad exception catch", False),
     ("JSA009", "MEDIUM", r"\b(?:Runtime\s*\.\s*getRuntime\s*\(\s*\)\s*\.\s*exec|ProcessBuilder)\s*\(", "Process execution", False),
     ("JSA010", "LOW", r"\b(?:log|logger)\s*\.\s*debug\s*\(", "Potential debug output", False),
+)
+
+JIRA_104_RULE = (
+    "JSA011", "MEDIUM", r"\bcom\.atlassian\.jira\.issue\.search\.SearchProvider\b",
+    "Deprecated Jira SearchProvider API (10.4+)", False,
 )
 
 
@@ -91,11 +96,13 @@ def _suppressed(lines: list[str], rule_id: str, line: int) -> bool:
                 (re.match(r"^\s*//", previous) and directive.search(previous)))
 
 
-def analyze(source: str, filename: str, disabled_rules: set[str] | None = None) -> list[Finding]:
+def analyze(source: str, filename: str, disabled_rules: set[str] | None = None,
+            jira_version: str = "generic") -> list[Finding]:
     code = mask_non_code(source)
     lines = source.splitlines() or [""]
     findings = []
-    for rule_id, severity, pattern, message, raw in RULES:
+    enabled_rules = RULES + ((JIRA_104_RULE,) if jira_version == "10.4+" else ())
+    for rule_id, severity, pattern, message, raw in enabled_rules:
         if rule_id in (disabled_rules or set()):
             continue
         for match in re.finditer(pattern, source if raw else code, re.I):
@@ -110,7 +117,8 @@ def analyze(source: str, filename: str, disabled_rules: set[str] | None = None) 
     return sorted(findings, key=lambda f: (f.file, f.line, f.column, f.rule))
 
 
-def scan(path: Path, disabled_rules: set[str] | None = None) -> dict:
+def scan(path: Path, disabled_rules: set[str] | None = None,
+         jira_version: str = "generic") -> dict:
     path = path.resolve()
     if path.is_file():
         if path.suffix.lower() != ".groovy":
@@ -128,8 +136,8 @@ def scan(path: Path, disabled_rules: set[str] | None = None) -> dict:
             content = file.read_text(encoding="utf-8-sig")
         except (OSError, UnicodeError) as exc:
             raise ValueError(f"Cannot read {name}: {exc}") from exc
-        findings.extend(asdict(f) for f in analyze(content, name, disabled_rules))
-    return {"schema_version": 2, "engine": "python", "engine_version": VERSION,
+        findings.extend(asdict(f) for f in analyze(content, name, disabled_rules, jira_version))
+    return {"schema_version": 2, "engine": "python", "engine_version": VERSION, "target_jira": jira_version,
             "files_scanned": len(files),
             "counts": {level: sum(f["severity"] == level for f in findings) for level in SEVERITY},
             "findings": findings}
@@ -142,7 +150,7 @@ def to_sarif(report: dict) -> dict:
                 "name": "Jira Script Analyzer", "version": VERSION,
                 "informationUri": "https://github.com/giovadista/jira-script-analyzer",
                 "rules": [{"id": rid, "shortDescription": {"text": message}}
-                          for rid, _, _, message, _ in RULES]}},
+                          for rid, _, _, message, _ in RULES + (JIRA_104_RULE,)]}},
                 "results": [{"ruleId": f["rule"], "level": levels[f["severity"]],
                              "message": {"text": f["message"]},
                              "locations": [{"physicalLocation": {
@@ -191,12 +199,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--disable", action="append", default=[], metavar="RULE_ID")
     parser.add_argument("--fail-on", choices=("none", "low", "medium", "high"), default="none")
+    parser.add_argument("--jira-version", choices=("generic", "10.3", "10.4+"), default="generic")
     args = parser.parse_args(argv)
-    unknown = set(args.disable) - {r[0] for r in RULES}
+    unknown = set(args.disable) - {r[0] for r in RULES + (JIRA_104_RULE,)}
     if unknown:
         parser.error("Unknown rule(s): " + ", ".join(sorted(unknown)))
     try:
-        report = scan(args.path, set(args.disable))
+        report = scan(args.path, set(args.disable), args.jira_version)
         if args.format == "html":
             rendered = render_html(report)
         elif args.format == "csv":
