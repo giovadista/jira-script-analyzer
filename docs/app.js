@@ -1,7 +1,7 @@
-import {RULES,SAMPLE,reportOf,toSarif,toCsv} from "./engine.js";
+import {RULES,SAMPLE,reportOf,toSarif,toCsv,toHtml} from "./engine.js";
 const el=id=>document.getElementById(id);
 let report=null;
-const outputButtons=["download","downloadCsv","downloadSarif"];
+const outputButtons=["download","downloadHtml","downloadCsv","downloadSarif"];
 const selectedFiles=[];
 for(const rule of RULES){
   const label=document.createElement("label");
@@ -43,6 +43,9 @@ function downloadFile(text,name,type){
 }
 el("download").addEventListener("click",()=>{
   if(report)downloadFile(JSON.stringify(report,null,2)+"\n","jira-script-analyzer-report.json","application/json");
+});
+el("downloadHtml").addEventListener("click",()=>{
+  if(report)downloadFile(toHtml(report),"jira-script-analyzer-report.html","text/html;charset=utf-8");
 });
 el("downloadCsv").addEventListener("click",()=>{
   if(report)downloadFile(toCsv(report),"jira-script-analyzer-report.csv","text/csv;charset=utf-8");
