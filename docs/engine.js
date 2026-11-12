@@ -62,8 +62,12 @@ function suppressed(source,ruleId,line){
   // Inline suppression of the exact rule: // jsa-ignore JSA003
   // Directives work on their own line (next line) or on the finding's line.
   const lines=source.split(/\r?\n/);
-  const directives=[lines[line-1]||"",lines[line-2]||""];
-  return directives.some(text=>new RegExp("//\\s*jsa-ignore\\s+"+ruleId+"(?:\\b|$)","i").test(text));
+  const current=lines[line-1]||"";
+  const previous=lines[line-2]||"";
+  const directive=new RegExp("//\\s*jsa-ignore\\s+"+ruleId+"(?:\\b|$)","i");
+  // A directive on the previous line must be a standalone comment; an inline
+  // directive only suppresses its own line, never the following line.
+  return directive.test(current)||(/^\\s*\/\//.test(previous)&&directive.test(previous));
 }
 export function analyze(source,filename="script.groovy",disabled=[]){
   const masked=maskNonCode(source);
