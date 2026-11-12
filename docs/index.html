@@ -10,7 +10,7 @@
 <body>
   <header class="wrap top"><div><p class="eyebrow">OPEN-SOURCE · LOCAL ANALYSIS</p><h1>Jira Script Analyzer</h1><p class="subtitle">Review Groovy ScriptRunner patterns without uploading source code.</p></div><a class="repo" href="https://github.com/giovadista/jira-script-analyzer" target="_blank" rel="noopener noreferrer">View source on GitHub ↗</a></header>
   <main class="wrap">
-    <section class="privacy" role="note"><strong>Private by design:</strong> Scripts are analyzed only in your browser. No external API requests, accounts, or installations. Heuristic findings require manual review.</section>
+    <section class="privacy" role="note"><strong>Private by design:</strong> Scripts are analyzed only in your browser. No external API requests, accounts, or installations. Never enter employer or client code without permission. Heuristic findings require manual review.</section>
     <div class="layout">
       <section class="panel"><div class="panelhead"><div><h2>Source</h2><p>Paste Groovy or select one or more local <code>.groovy</code> files.</p></div><button id="sample" type="button" class="secondary">Load example</button></div>
         <label for="source">Groovy code</label>
@@ -22,11 +22,11 @@
       </section>
       <section class="panel results" aria-live="polite"><div class="panelhead"><div><h2>Findings</h2><p id="scanSummary">Run an analysis to see results.</p></div></div>
         <div class="summary"><div><b id="total">—</b><span>Total</span></div><div><b id="high">—</b><span>High</span></div><div><b id="medium">—</b><span>Medium</span></div><div><b id="low">—</b><span>Low</span></div></div>
-        <div class="fileline"><label for="severityFilter">Severity</label><select id="severityFilter"><option value="ALL">All</option><option value="HIGH">High</option><option value="MEDIUM">Medium</option><option value="LOW">Low</option></select><button id="download" type="button" class="secondary" disabled>Export JSON</button></div>
-        <div class="tablewrap"><table><thead><tr><th>Severity</th><th>Rule</th><th>Location</th><th>Finding</th></tr></thead><tbody id="findings"><tr><td colspan="4" class="empty">No analysis yet</td></tr></tbody></table></div>
+        <div class="fileline"><label for="severityFilter">Severity</label><select id="severityFilter"><option value="ALL">All</option><option value="HIGH">High</option><option value="MEDIUM">Medium</option><option value="LOW">Low</option></select><button id="download" type="button" class="secondary" disabled>Export JSON</button><button id="downloadCsv" type="button" class="secondary" disabled>CSV</button><button id="downloadSarif" type="button" class="secondary" disabled>SARIF</button></div>
+        <div class="fileline"><label for="search">Search findings</label><input id="search" type="search" placeholder="Rule, file, description…"></div><div class="tablewrap"><table><thead><tr><th>Severity</th><th>Rule</th><th>Location</th><th>Finding / recommendation</th></tr></thead><tbody id="findings"><tr><td colspan="4" class="empty">No analysis yet</td></tr></tbody></table></div>
       </section>
     </div>
-    <footer>Independent proof of concept, not affiliated with Atlassian or Adaptavist. No guarantee of security or compatibility. <a href="https://github.com/giovadista/jira-script-analyzer/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a></footer>
+    <footer>Independent proof of concept, not affiliated with Atlassian or Adaptavist. Heuristic results only; not a security certification or version compatibility guarantee. <a href="https://github.com/giovadista/jira-script-analyzer/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a></footer>
   </main>
   <script type="module" src="./app.js"></script>
 </body></html>
