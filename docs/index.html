@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Offline Groovy static analysis for Jira ScriptRunner. Runs entirely in your browser.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Jira Script Analyzer | Browser Demo</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="wrap top"><div><p class="eyebrow">OPEN-SOURCE · LOCAL ANALYSIS</p><h1>Jira Script Analyzer</h1><p class="subtitle">Review Groovy ScriptRunner patterns without uploading source code.</p></div><a class="repo" href="https://github.com/giovadista/jira-script-analyzer" target="_blank" rel="noopener noreferrer">View source on GitHub ↗</a></header>
+  <main class="wrap">
+    <section class="privacy" role="note"><strong>Private by design:</strong> Scripts are analyzed only in your browser. No external API requests, accounts, or installations. Heuristic findings require manual review.</section>
+    <div class="layout">
+      <section class="panel"><div class="panelhead"><div><h2>Source</h2><p>Paste Groovy or select one or more local <code>.groovy</code> files.</p></div><button id="sample" type="button" class="secondary">Load example</button></div>
+        <label for="source">Groovy code</label>
+        <textarea id="source" spellcheck="false" aria-label="Groovy source" placeholder="// Paste a Groovy script here..." rows="17"></textarea>
+        <div class="fileline"><label for="files" class="filebutton">Choose .groovy files</label><input id="files" type="file" accept=".groovy,text/plain" multiple><span id="fileLabel">No files selected</span></div>
+        <fieldset><legend>Checks to run</legend><div id="rules" class="checks"></div></fieldset>
+        <div class="actions"><button id="run" type="button" class="primary">Analyze script</button><button id="clear" type="button" class="secondary">Clear</button></div>
+        <p id="error" role="alert" class="error" hidden></p>
+      </section>
+      <section class="panel results" aria-live="polite"><div class="panelhead"><div><h2>Findings</h2><p id="scanSummary">Run an analysis to see results.</p></div></div>
+        <div class="summary"><div><b id="total">—</b><span>Total</span></div><div><b id="high">—</b><span>High</span></div><div><b id="medium">—</b><span>Medium</span></div><div><b id="low">—</b><span>Low</span></div></div>
+        <div class="fileline"><label for="severityFilter">Severity</label><select id="severityFilter"><option value="ALL">All</option><option value="HIGH">High</option><option value="MEDIUM">Medium</option><option value="LOW">Low</option></select><button id="download" type="button" class="secondary" disabled>Export JSON</button></div>
+        <div class="tablewrap"><table><thead><tr><th>Severity</th><th>Rule</th><th>Location</th><th>Finding</th></tr></thead><tbody id="findings"><tr><td colspan="4" class="empty">No analysis yet</td></tr></tbody></table></div>
+      </section>
+    </div>
+    <footer>Independent proof of concept, not affiliated with Atlassian or Adaptavist. No guarantee of security or compatibility. <a href="https://github.com/giovadista/jira-script-analyzer/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a></footer>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body></html>
