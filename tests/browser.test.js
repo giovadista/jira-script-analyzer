@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {analyze,maskNonCode,reportOf,toSarif,toCsv,RULES,SAMPLE,VERSION} from "../docs/engine.js";
+import {analyze,maskNonCode,reportOf,toSarif,toCsv,toHtml,RULES,SAMPLE,VERSION} from "../docs/engine.js";
 
 test("engine has version and ten documented rules",()=>{
  assert.equal(VERSION,"0.4.0"); assert.equal(RULES.length,10);
@@ -72,4 +72,17 @@ test("CSV quotes filenames and does not leak code content",()=>{
 test("empty files return empty report",()=>{
  const r=reportOf([]);
  assert.equal(r.files_scanned,0);assert.deepEqual(r.findings,[]);
+});
+
+test("standalone HTML report escapes malicious filenames and never includes script text",()=>{
+ const r=reportOf([{name:'<img src=x onerror=alert(1)>.groovy',content:'password = "secretvalue"'}]);
+ const page=toHtml(r);
+ assert.ok(page.includes("&lt;img src=x onerror=alert(1)&gt;"));
+ assert.ok(!page.includes('<img src=x'));
+ assert.ok(!page.includes("secretvalue"));
+});
+test("line index handles a large input without changing positions",()=>{
+ const source="\n".repeat(2500)+"println('ok')";
+ const f=analyze(source,"long.groovy");
+ assert.equal(f.length,1);assert.equal(f[0].line,2501);assert.equal(f[0].column,1);
 });
