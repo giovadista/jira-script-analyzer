@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/giovadista/jira-script-analyzer/actions/workflows/tests.yml/badge.svg)](https://github.com/giovadista/jira-script-analyzer/actions/workflows/tests.yml)
 
-An **offline, open-source, heuristic analyzer** for Jira Cloud ScriptRunner, exported Jira Cloud Automation JSON, Data Center → Cloud migration dependencies, conservative DC-to-Cloud conversion candidates, and Jira Data Center Groovy scripts. This project is independent of Atlassian and Adaptavist.
+An **offline, open-source, heuristic analyzer** for Jira Cloud ScriptRunner, exported Jira Cloud Automation JSON, Data Center → Cloud migration dependencies, long-form listener migration workbench, conservative DC-to-Cloud conversion candidates, and Jira Data Center Groovy scripts. This project is independent of Atlassian and Adaptavist.
 
 > **Prototype warning:** This is not a full Groovy parser or security audit. It does not execute scripts or contact Jira. Findings are best-effort, and false positives or negatives are possible.
 
@@ -20,7 +20,7 @@ Note: This Pages address will not work until Pages is enabled and the first depl
 
 **Browser features:** choose Cloud ScriptRunner, Cloud Automation, DC → Cloud migration or Data Center Groovy; load a synthetic example, paste code or select files; filter/search findings, view human review guidance and export JSON, HTML, CSV or SARIF. Cloud modes accept Groovy/JS/TS source or Automation JSON as appropriate. For DC use the version profile and optional rule suppressions. For deliberate exceptions, add `// jsa-ignore JSA003` on the finding line or on a standalone comment line immediately before it. The browser and Python analyzers use independently implemented heuristic checks and may differ in edge cases.
 
-Read [Cloud and migration guide](docs/CLOUD.md) and [Script converter guide](docs/CONVERTER.md) before using the Cloud modes. **Browser engine tests:** GitHub Actions runs `npm test` with Node.js. Node is needed only to develop/test the browser engine outside GitHub; end users do not install anything.
+Read the [Cloud and migration guide](docs/CLOUD.md), [Script converter guide](docs/CONVERTER.md), and [Listener Migration Workbench guide](docs/LISTENER_WORKBENCH.md) before using the Cloud modes. **Browser engine tests:** GitHub Actions runs `npm test` with Node.js. Node is needed only to develop/test the browser engine outside GitHub; end users do not install anything.
 
 ## Requirements
 
@@ -35,6 +35,21 @@ python -m unittest discover -s tests -v
 ```
 
 Open the generated `report.html` in a browser. Pass a directory to recursively scan its `.groovy` files.
+
+
+## Long-form Listener Migration Workbench
+
+Select **Data Center → Cloud · Listener Workbench** for listeners of many lines.
+It tokenizes Groovy (without executing it), groups statements and structural blocks,
+classifies DC APIs and potential Cloud replacements, and maps each task to an exact
+original line range. Download a Markdown migration assessment, a machine-readable
+JSON map and a **comment-only, intentionally non-executable** Cloud blueprint.
+Only restricted read-only patterns produce candidate snippets; issue writes, event
+context, conditions and other actions remain explicit migration tasks.
+
+The workbench is a **structured planning tool**, not an automatic source-to-source
+compiler. A valid Jira Cloud listener must be reviewed and assembled by a developer,
+then verified in an authorized Cloud sandbox. No automated compatibility guarantee.
 
 ## Command-line usage
 
