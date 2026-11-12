@@ -156,7 +156,11 @@ def to_csv(report: dict) -> str:
     writer = csv.writer(output)
     fields = ("file", "line", "column", "rule", "severity", "message")
     writer.writerow(fields)
-    writer.writerows([finding.get(field, "") for field in fields] for finding in report["findings"])
+    def safe(value: object) -> object:
+        text = str(value)
+        return "'" + text if text.startswith(("=", "+", "-", "@", "\t", "\r")) else value
+    writer.writerows([safe(finding.get(field, "")) for field in fields]
+                     for finding in report["findings"])
     return output.getvalue()
 
 
