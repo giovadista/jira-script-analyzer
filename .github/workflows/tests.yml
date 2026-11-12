@@ -33,3 +33,5 @@ jobs:
         run: |
           node --check docs/engine.js
           node --check docs/app.js
+          node --check docs/cloud.js
+          node --check docs/converter.js
