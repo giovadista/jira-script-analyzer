@@ -121,7 +121,12 @@ export function toSarif(report){
   }]};
 }
 export function toCsv(report){
-  const esc=v=>'"'+String(v??"").replaceAll('"','""')+'"';
+  const esc=v=>{
+    const value=String(v??"");
+    // Prefix spreadsheet formula-looking cells to avoid CSV formula injection.
+    const safe=/^[=+@\-\t\r]/.test(value)?"'"+value:value;
+    return '"'+safe.replaceAll('"','""')+'"';
+  };
   const fields=["file","line","column","rule","severity","category","message","help"];
   return [fields.map(esc).join(","),...report.findings.map(f=>fields.map(k=>esc(f[k])).join(","))].join("\r\n")+"\r\n";
 }
