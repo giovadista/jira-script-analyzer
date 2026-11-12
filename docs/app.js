@@ -10,6 +10,7 @@ const selectedFiles=[];
 function resetListenerPanel(){
  listenerReport=null;
  el("listenerBlueprint").value="";el("listenerSummary").textContent="Select a listener and run the assessment.";
+ el("listenerDisposition").value="ALL";el("listenerTaskSearch").value="";
  for(const name of ["downloadListenerMarkdown","downloadListenerBlueprint","downloadListenerJson"])el(name).disabled=true;
  const tbody=el("listenerSteps");tbody.replaceChildren();const tr=tbody.insertRow(),td=tr.insertCell();td.colSpan=3;td.className="empty";td.textContent="Run the listener migration assessment";
 }
@@ -80,6 +81,8 @@ el("files").addEventListener("change",e=>{
 });
 el("severityFilter").addEventListener("change",render);
 el("search").addEventListener("input",render);
+el("listenerDisposition").addEventListener("change",()=>{if(listenerReport)renderListenerPanel(listenerReport);});
+el("listenerTaskSearch").addEventListener("input",()=>{if(listenerReport)renderListenerPanel(listenerReport);});
 el("run").addEventListener("click",async()=>{
  el("error").hidden=true;
  try{
@@ -141,7 +144,13 @@ function renderListenerPanel(data){
  for(const name of ["downloadListenerMarkdown","downloadListenerBlueprint","downloadListenerJson"])el(name).disabled=false;
  const tbody=el("listenerSteps");tbody.replaceChildren();
  const maxRows=750;
- for(const step of data.steps.slice(0,maxRows)){
+ const disposition=el("listenerDisposition").value;
+ const query=el("listenerTaskSearch").value.toLocaleLowerCase().trim();
+ const filtered=data.steps.filter(s=>
+  (disposition==="ALL"||s.disposition===disposition)&&
+  (!query||[s.id,s.title,s.category,s.rule,s.advice,String(s.lineStart),String(s.lineEnd)].some(v=>
+    v.toLocaleLowerCase().includes(query))));
+ for(const step of filtered.slice(0,maxRows)){
    const tr=tbody.insertRow(),line=tr.insertCell(),status=tr.insertCell(),detail=tr.insertCell();
    const jump=document.createElement("button");jump.className="workbench-jump";jump.textContent=String(step.lineStart)+(step.lineEnd>step.lineStart?"–"+step.lineEnd:"");
    jump.title="Jump to original code at line "+step.lineStart;
@@ -152,9 +161,23 @@ function renderListenerPanel(data){
    });
    line.append(jump);status.textContent=step.disposition;const strong=document.createElement("strong"),p=document.createElement("p");
    strong.textContent=step.title;p.className="recommendation";p.textContent=step.advice;detail.append(strong,p);
+   if(step.snippet){
+     const details=document.createElement("details"),summary=document.createElement("summary"),pre=document.createElement("pre");
+     summary.textContent="View unverified Cloud snippet";
+     pre.className="workbench-snippet";pre.textContent=step.snippet;
+     details.append(summary,pre);
+     const copy=document.createElement("button");copy.type="button";copy.className="secondary";copy.textContent="Copy snippet";
+     copy.addEventListener("click",async()=>{
+       try{await navigator.clipboard.writeText(step.snippet);copy.textContent="Copied";}
+       catch{copy.textContent="Select the code above to copy";}
+     });
+     details.append(copy);detail.append(details);
+   }
+   if(step.doc){const link=document.createElement("a");link.href=step.doc;link.target="_blank";
+     link.rel="noopener noreferrer";link.textContent="Relevant documentation";detail.append(link);}
  }
- if(data.steps.length>maxRows){const tr=tbody.insertRow(),td=tr.insertCell();td.colSpan=3;
-  td.textContent="Showing the first "+maxRows+" tasks. Download Markdown/JSON for the complete report.";
+ if(filtered.length>maxRows){const tr=tbody.insertRow(),td=tr.insertCell();td.colSpan=3;
+  td.textContent="Showing the first "+maxRows+" matching tasks. Download Markdown/JSON for the complete report.";
  }
 }
 el("downloadListenerMarkdown").addEventListener("click",()=>{
