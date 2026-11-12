@@ -86,9 +86,11 @@ function classify(source,masked,segment,state){
       advice:isDC?"Remove import after migrating ALL dependent API calls; a simple import removal does not migrate behavior.":"Verify that this import exists in ScriptRunner Cloud."};
   }
   if(segment.kind==="block-open"||isControl(original)){
-    return {...base,category:"Control flow",title:"Control flow / closure requires semantic review",
-      disposition:"structural",rule:"FLOW",severity:"MEDIUM",
-      advice:"Preserve branch conditions, guards, scope and exception behavior while rewriting dependent API calls."};
+    const touchesEvent=/\bevent\s*\./.test(code);
+    return {...base,category:touchesEvent?"Listener context":"Control flow",
+      title:touchesEvent?"Control flow depends on Data Center event payload":"Control flow / closure requires semantic review",
+      disposition:"structural",rule:touchesEvent?"FLOW-EVENT":"FLOW",severity:touchesEvent?"HIGH":"MEDIUM",
+      advice:touchesEvent?"Revalidate guard and event binding against the Cloud Script Listener event/Forge payload, preserving all branch semantics.":"Preserve branch conditions, guards, scope and exception behavior while rewriting dependent API calls."};
   }
   let m=original.match(managerDef);
   if(m){
@@ -162,6 +164,20 @@ export function analyzeListenerMigration(source,options={}){
   const structured=segmentGroovy(source);
   const state={managers:new Set(),issueVars:new Set()};
   const steps=structured.segments.map(s=>classify(source,structured.masked,s,state)).filter(Boolean);
+  // Never offer a conversion snippet when lexical/structural diagnostics suggest
+  // the overall source may be mis-segmented.
+  if(structured.diagnostics.length){
+    for(const step of steps){
+      if(step.disposition==="candidate"||step.disposition==="template"){
+        step.disposition="manual";
+        step.severity="HIGH";
+        step.snippet=null;
+        step.title="Parsing ambiguity — candidate withheld";
+        step.advice="Resolve Groovy syntax/lexer warnings first; no generated snippet is reliable until the source is structurally valid.";
+        step.rule="PARSE-BLOCKED";
+      }
+    }
+  }
   const totals={candidate:0,template:0,manual:0,structural:0,remove:0};
   for(const step of steps)totals[step.disposition]++;
   const risk={
