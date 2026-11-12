@@ -84,9 +84,10 @@ el("run").addEventListener("click",async()=>{
    if(mode==="dc-converter"){
      const converted=convertDcScript(files[0].content,el("executionContext").value);
      el("convertedCode").value=converted.generated_code;
-     el("conversionStatus").textContent=converted.status==="candidate"?"Conversion candidate generated — unverified.":"Automatic conversion unavailable — manual review required.";
+     el("conversionStatus").textContent=converted.status==="candidate"?"Read-only conversion candidate — unverified ("+converted.confidence+" confidence).":"Automatic conversion unavailable — manual review required.";
      const notice=el("conversionNotices");notice.replaceChildren();
      for(const message of converted.notices){const p=document.createElement("p");p.textContent=message;notice.append(p);}
+     for(const task of converted.review_tasks||[]){const p=document.createElement("p");p.textContent="Review "+task.id.toUpperCase()+": "+task.message;notice.append(p);}
      for(const reference of converted.references){const link=document.createElement("a");link.href=reference.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent=reference.label;notice.append(link,document.createTextNode(" · "));}
      el("copyConverted").disabled=false;el("downloadConverted").disabled=false;
      report=assessMigration(files);
