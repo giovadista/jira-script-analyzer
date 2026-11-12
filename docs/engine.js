@@ -113,8 +113,14 @@ export function toSarif(report){
   const level={HIGH:"error",MEDIUM:"warning",LOW:"note"};
   return {version:"2.1.0",$schema:"https://json.schemastore.org/sarif-2.1.0.json",runs:[{
     tool:{driver:{name:"Jira Script Analyzer",version:VERSION,informationUri:"https://github.com/giovadista/jira-script-analyzer",
-      rules:RULES.map(r=>({id:r.id,name:r.label,shortDescription:{text:r.label},
-        fullDescription:{text:r.help},properties:{category:r.category,severity:r.severity}}))}},
+      rules:[
+        ...RULES.map(r=>({id:r.id,name:r.label,shortDescription:{text:r.label},
+          fullDescription:{text:r.help},properties:{category:r.category,severity:r.severity}})),
+        ...[...new Map(report.findings.filter(f=>!RULES.some(r=>r.id===f.rule))
+          .map(f=>[f.rule,f])).values()].map(f=>({id:f.rule,name:f.message,
+          shortDescription:{text:f.message},fullDescription:{text:f.help||f.message},
+          properties:{category:f.category||"Cloud",severity:f.severity}}))
+      ]}},
     results:report.findings.map(f=>({ruleId:f.rule,level:level[f.severity],
       message:{text:f.message},locations:[{physicalLocation:{
         artifactLocation:{uri:f.file},region:{startLine:f.line,startColumn:f.column}
