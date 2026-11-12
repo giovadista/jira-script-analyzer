@@ -1,6 +1,6 @@
 // Jira Script Analyzer — browser-only heuristic engine (no network, no eval).
 // This is NOT a complete Groovy parser, security scanner or API compatibility checker.
-export const VERSION="0.4.0";
+export const VERSION="0.5.0";
 export const RULES=[
 {id:"JSA001",severity:"HIGH",label:"Possible hard-coded credential",category:"Security",help:"A string literal is assigned to a credential-like variable. Confirm that it is not a secret. Use a managed secret source or secure application configuration; never commit live tokens.",pattern:/\b(?:password|api[_-]?token|secret|accessToken|clientSecret|privateKey)\s*=\s*(["'])(?:\\.|(?!\1)[^\r\n\\])+\1/gi,raw:true},
 {id:"JSA002",severity:"MEDIUM",label:"Blocking Thread.sleep",category:"Performance",help:"Sleeping a Jira worker or listener thread can reduce throughput. Prefer asynchronous orchestration or an appropriate scheduled job.",pattern:/\bThread\s*\.\s*sleep\s*\(/gi},
@@ -11,7 +11,8 @@ export const RULES=[
 {id:"JSA007",severity:"MEDIUM",label:"Review network calls and timeouts",category:"Reliability",help:"Check network timeouts, TLS, failure handling and credential management. Some usages may be safe.",pattern:/\b(?:URL|HttpURLConnection)\s*\(/gi},
 {id:"JSA008",severity:"MEDIUM",label:"Broad exception catch",category:"Reliability",help:"Catch the narrowest exception appropriate, log context safely and handle retries or failure explicitly.",pattern:/\bcatch\s*\(\s*(?:Exception|Throwable)\s+\w+\s*\)/gi},
 {id:"JSA009",severity:"MEDIUM",label:"Process execution",category:"Security",help:"Review command execution, untrusted arguments and the host execution policy. Prefer a constrained integration API.",pattern:/\b(?:Runtime\s*\.\s*getRuntime\s*\(\s*\)\s*\.\s*exec|ProcessBuilder)\s*\(/gi},
-{id:"JSA010",severity:"LOW",label:"Potential debug output",category:"Privacy",help:"Review whether debug output contains personal information, credentials or large payloads.",pattern:/\b(?:log|logger)\s*\.\s*debug\s*\(/gi}
+{id:"JSA010",severity:"LOW",label:"Potential debug output",category:"Privacy",help:"Review whether debug output contains personal information, credentials or large payloads.",pattern:/\b(?:log|logger)\s*\.\s*debug\s*\(/gi},
+{id:"JSA011",severity:"MEDIUM",label:"Deprecated Jira SearchProvider API (10.4+)",category:"Jira compatibility",help:"In Jira Data Center 10.4+, com.atlassian.jira.issue.search.SearchProvider is deprecated for removal. Check the official 10.4+ API and review migration to IssueDocumentSearchService or SearchService depending on use case.",pattern:/\bcom\.atlassian\.jira\.issue\.search\.SearchProvider\b/gi,target:"10.4+"}
 ];
 export const SAMPLE = '// Synthetic input only\n' +
   'def apiToken = "demo-not-a-real-token"\n' +
@@ -77,14 +78,14 @@ function suppressed(lines,ruleId,line){
   // directive only suppresses its own line, never the following line.
   return directive.test(current)||(/^\\s*\/\//.test(previous)&&directive.test(previous));
 }
-export function analyze(source,filename="script.groovy",disabled=[]){
+export function analyze(source,filename="script.groovy",disabled=[],options={}){
   const masked=maskNonCode(source);
   const ignored=new Set(disabled);
   const starts=lineIndex(source);
   const lines=source.split(/\r?\n/);
   const results=[];
   for(const rule of RULES){
-    if(ignored.has(rule.id))continue;
+    if(ignored.has(rule.id)||rule.target&&options.jiraVersion!==rule.target)continue;
     // matchAll clones regex state, allowing deterministic repeated scans.
     const input=rule.raw?source:masked;
     for(const match of input.matchAll(rule.pattern)){
@@ -101,10 +102,10 @@ export function analyze(source,filename="script.groovy",disabled=[]){
   results.sort((a,b)=>a.file.localeCompare(b.file)||a.line-b.line||a.column-b.column||order[a.severity]-order[b.severity]||a.rule.localeCompare(b.rule));
   return results;
 }
-export function reportOf(files,disabled=[]){
+export function reportOf(files,disabled=[],options={}){
   if(!Array.isArray(files))throw new TypeError("files must be an array");
-  const findings=files.flatMap(f=>analyze(f.content,f.name,disabled));
-  return {schema_version:2,engine:"browser",engine_version:VERSION,files_scanned:files.length,
+  const findings=files.flatMap(f=>analyze(f.content,f.name,disabled,options));
+  return {schema_version:2,engine:"browser",engine_version:VERSION,target_jira:options.jiraVersion||"generic",files_scanned:files.length,
     counts:Object.fromEntries(["HIGH","MEDIUM","LOW"].map(level=>[level,findings.filter(f=>f.severity===level).length])),
     findings};
 }
