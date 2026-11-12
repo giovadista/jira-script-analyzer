@@ -99,12 +99,12 @@ export function convertDcScript(source,context="console"){
       generated_code=[
         "// REVIEW CANDIDATE: Cloud HAPI availability and method behavior must be checked.",
         'def '+operation.variable+' = Issues.getByKey("'+operation.key+'")',
-        "// TODO: Verify feature parity, runtime, permissions and response semantics."
+        "// TODO: Verify HAPI support, feature parity, runtime, permissions and response semantics."
       ].join("\n")+"\n";
       notices.push("No change to HAPI lookup. Validate feature parity on the target Cloud app version.");
     }else{
       status="candidate";confidence="medium";
-      const bodyVariable="cloudIssueResponse";
+      const bodyVariable="response";
       const lines=[
         "// GENERATED READ-ONLY CANDIDATE — NOT VERIFIED IN CLOUD.",
         "// Validate execution context, permissions, scopes and HTTP failures before deployment.",
