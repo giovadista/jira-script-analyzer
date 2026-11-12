@@ -18,6 +18,7 @@
 <option value="scriptrunner-cloud">Jira Cloud · ScriptRunner</option>
 <option value="automation-cloud">Jira Cloud · Automation JSON</option>
 <option value="dc-to-cloud">Data Center → Cloud · Migration assessment</option>
+<option value="listener-migration">Data Center → Cloud · Listener Workbench (new)</option>
 <option value="dc-converter">Data Center → Cloud · Script converter (beta)</option>
 <option value="data-center">Jira Data Center · Groovy analysis</option>
 </select></div>
@@ -34,6 +35,22 @@
         <fieldset id="dcRules" hidden><legend>Data Center checks to run</legend><div id="rules" class="checks"></div></fieldset>
         <div class="actions"><button id="run" type="button" class="primary">Run assessment</button><button id="clear" type="button" class="secondary">Clear</button></div>
         <p id="error" role="alert" class="error" hidden></p>
+        <section id="listenerPanel" hidden>
+          <div class="dividerline"></div>
+          <h2>Listener Migration Workbench</h2>
+          <p class="recommendation">Line-by-line migration analysis. Identifies Cloud candidates and explicit manual tasks; produces a non-executable blueprint.</p>
+          <div id="listenerSummary" class="recommendation" role="status">Select a listener and run the assessment.</div>
+          <label for="listenerBlueprint">Structured migration blueprint (comment-only)</label>
+          <textarea id="listenerBlueprint" rows="17" spellcheck="false" readonly></textarea>
+          <div class="actions" style="flex-wrap:wrap">
+            <button id="downloadListenerMarkdown" class="secondary" type="button" disabled>Download assessment .md</button>
+            <button id="downloadListenerBlueprint" class="secondary" type="button" disabled>Download blueprint .groovy</button>
+            <button id="downloadListenerJson" class="secondary" type="button" disabled>Download map .json</button>
+          </div>
+          <h3 class="workbench-heading">Line-by-line migration tasks</h3>
+          <div class="tablewrap"><table class="workbench-table"><thead><tr><th>DC line</th><th>Treatment</th><th>Operation and guidance</th></tr></thead>
+            <tbody id="listenerSteps"><tr><td colspan="3" class="empty">Run the listener migration assessment</td></tr></tbody></table></div>
+        </section>
         <section id="converterPanel" hidden>
           <div class="dividerline"></div>
           <h2>Cloud conversion candidate</h2>
