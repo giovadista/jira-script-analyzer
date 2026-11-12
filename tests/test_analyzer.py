@@ -2,7 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from analyzer import analyze, main, mask_non_code, render_html, scan, to_csv, to_sarif, RULES, VERSION
+from analyzer import analyze, main, mask_non_code, render_html, scan, to_csv, to_sarif, RULES, JIRA_104_RULE, VERSION
 
 class LexerTests(unittest.TestCase):
     def test_comments_and_strings(self):
@@ -37,6 +37,13 @@ class LexerTests(unittest.TestCase):
     def test_new_rules(self):
         s = 'try {} catch (Exception e) {}\nnew ProcessBuilder("ls")\nlog.debug("hi")'
         self.assertEqual([f.rule for f in analyze(s, 'x.groovy')], ['JSA008', 'JSA009', 'JSA010'])
+
+    def test_jira_compatibility_by_version(self):
+        source = 'import com.atlassian.jira.issue.search.SearchProvider'
+        self.assertEqual(analyze(source, 'api.groovy'), [])
+        self.assertEqual(analyze(source, 'api.groovy', jira_version='10.3'), [])
+        findings = analyze(source, 'api.groovy', jira_version='10.4+')
+        self.assertEqual([f.rule for f in findings], ['JSA011'])
 
     def test_clean_script(self):
         self.assertEqual(analyze('log.info("hello")', 'clean.groovy'), [])
@@ -97,8 +104,8 @@ class ScanTests(unittest.TestCase):
         self.assertEqual(main(['this-file-does-not-exist.groovy']), 2)
 
     def test_documented_rules(self):
-        self.assertEqual(VERSION, '0.4.0')
-        self.assertEqual(len(RULES), 10)
+        self.assertEqual(VERSION, '0.5.0')
+        self.assertEqual(len(RULES) + 1, 11)
 
 
 if __name__ == '__main__':
