@@ -35,3 +35,5 @@ jobs:
           node --check docs/app.js
           node --check docs/cloud.js
           node --check docs/converter.js
+          node --check docs/groovy-structure.js
+          node --check docs/listener-workbench.js
