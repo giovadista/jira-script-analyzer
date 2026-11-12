@@ -23,3 +23,9 @@ td strong{font-weight:680}
 #listenerBlueprint{min-height:250px}
 #listenerPanel .actions{margin:15px 0}
 #listenerPanel .recommendation{margin:6px 0 14px}
+
+#listenerTaskSearch{min-width:145px;max-width:260px}
+.workbench-snippet{font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;background:#10243d;color:#e3edff;padding:12px;border-radius:8px;white-space:pre;overflow:auto}
+#listenerSteps details{margin:10px 0}
+#listenerSteps summary{cursor:pointer;color:#1e58aa;font-weight:650;font-size:.82rem}
+#listenerSteps a{display:inline-block;margin-top:6px;font-size:.8rem}
