@@ -18,6 +18,7 @@
 <option value="scriptrunner-cloud">Jira Cloud · ScriptRunner</option>
 <option value="automation-cloud">Jira Cloud · Automation JSON</option>
 <option value="dc-to-cloud">Data Center → Cloud · Migration assessment</option>
+<option value="dc-converter">Data Center → Cloud · Script converter (beta)</option>
 <option value="data-center">Jira Data Center · Groovy analysis</option>
 </select></div>
 <div class="fileline" id="cloudLanguageRow"><label for="cloudLanguage">Script language</label><select id="cloudLanguage">
@@ -33,6 +34,26 @@
         <fieldset id="dcRules" hidden><legend>Data Center checks to run</legend><div id="rules" class="checks"></div></fieldset>
         <div class="actions"><button id="run" type="button" class="primary">Run assessment</button><button id="clear" type="button" class="secondary">Clear</button></div>
         <p id="error" role="alert" class="error" hidden></p>
+        <section id="converterPanel" hidden>
+          <div class="dividerline"></div>
+          <h2>Cloud conversion candidate</h2>
+          <p class="recommendation">Automatic conversion is limited to explicitly supported patterns. No output is certified or automatically deployed.</p>
+          <div class="fileline"><label for="executionContext">ScriptRunner execution context</label>
+            <select id="executionContext">
+              <option value="console">Script Console</option>
+              <option value="job">Scheduled Job</option>
+              <option value="listener">Listener</option>
+              <option value="scripted-field">Scripted Field</option>
+              <option value="workflow">Workflow condition / validator</option>
+              <option value="behaviour">Behaviour</option>
+            </select>
+          </div>
+          <p id="conversionStatus" class="recommendation" role="status">No conversion attempted.</p>
+          <label for="convertedCode">Proposed Cloud Groovy / review notes</label>
+          <textarea id="convertedCode" rows="12" spellcheck="false" readonly></textarea>
+          <div class="actions"><button id="copyConverted" class="secondary" type="button" disabled>Copy candidate</button><button id="downloadConverted" class="secondary" type="button" disabled>Download candidate</button></div>
+          <div id="conversionNotices" class="recommendation"></div>
+        </section>
       </section>
       <section class="panel results" aria-live="polite"><div class="panelhead"><div><h2>Findings</h2><p id="scanSummary">Run an analysis to see results.</p></div></div>
         <div class="summary"><div><b id="total">—</b><span>Total</span></div><div><b id="high">—</b><span>High</span></div><div><b id="medium">—</b><span>Medium</span></div><div><b id="low">—</b><span>Low</span></div></div>
