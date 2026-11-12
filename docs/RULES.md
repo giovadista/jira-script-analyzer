@@ -44,7 +44,7 @@ You may also disable an entire rule from the browser UI or with `--disable JSA00
 - **JSON**: machine-readable findings and counts, no source snippets.
 - **CSV**: spreadsheet-friendly list; exercise care when sharing file paths.
 - **SARIF 2.1.0**: static analysis interchange format; produced reports are not automatically uploaded to GitHub code scanning.
-- **HTML (Python CLI)**: offline report with escaped output.
+- **HTML (browser and Python CLI)**: offline report with escaped output.
 
 ## Future validation
 
