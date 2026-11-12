@@ -103,6 +103,7 @@ el("run").addEventListener("click",async()=>{
      files.push({name:mode==="automation-cloud"?"pasted-automation.json":mode==="scriptrunner-cloud"?"pasted-cloud."+({groovy:"groovy",javascript:"js",typescript:"ts"}[language]):"pasted-script.groovy",content});
    }
    if(mode==="listener-migration"){
+     if(selectedFiles.length)el("source").value=files[0].content;
      listenerReport=analyzeListenerMigration(files[0].content);
      renderListenerPanel(listenerReport);
      report={schema_version:2,engine:"browser",mode:"listener-migration",files_scanned:1,
@@ -139,7 +140,8 @@ function renderListenerPanel(data){
  el("listenerBlueprint").value=migrationBlueprint(data);
  for(const name of ["downloadListenerMarkdown","downloadListenerBlueprint","downloadListenerJson"])el(name).disabled=false;
  const tbody=el("listenerSteps");tbody.replaceChildren();
- for(const step of data.steps){
+ const maxRows=750;
+ for(const step of data.steps.slice(0,maxRows)){
    const tr=tbody.insertRow(),line=tr.insertCell(),status=tr.insertCell(),detail=tr.insertCell();
    const jump=document.createElement("button");jump.className="workbench-jump";jump.textContent=String(step.lineStart)+(step.lineEnd>step.lineStart?"–"+step.lineEnd:"");
    jump.title="Jump to original code at line "+step.lineStart;
@@ -150,6 +152,9 @@ function renderListenerPanel(data){
    });
    line.append(jump);status.textContent=step.disposition;const strong=document.createElement("strong"),p=document.createElement("p");
    strong.textContent=step.title;p.className="recommendation";p.textContent=step.advice;detail.append(strong,p);
+ }
+ if(data.steps.length>maxRows){const tr=tbody.insertRow(),td=tr.insertCell();td.colSpan=3;
+  td.textContent="Showing the first "+maxRows+" tasks. Download Markdown/JSON for the complete report.";
  }
 }
 el("downloadListenerMarkdown").addEventListener("click",()=>{
