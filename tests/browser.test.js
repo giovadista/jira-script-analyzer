@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {analyze,maskNonCode,reportOf,toSarif,toCsv,toHtml,RULES,SAMPLE,VERSION} from "../docs/engine.js";
 
-test("engine has version and ten documented rules",()=>{
- assert.equal(VERSION,"0.4.0"); assert.equal(RULES.length,10);
+test("engine has version and eleven documented rules",()=>{
+ assert.equal(VERSION,"0.5.0"); assert.equal(RULES.length,11);
  for(const r of RULES){assert.match(r.id,/^JSA\d{3}$/);assert.ok(r.help.length>25);}
 });
 test("sample has four findings, expected severities and locations",()=>{
@@ -59,7 +59,7 @@ test("report counts and metadata",()=>{
 test("SARIF 2.1.0 contains tools, rules and valid positions",()=>{
  const sarif=toSarif(reportOf([{name:"sample.groovy",content:SAMPLE}]));
  assert.equal(sarif.version,"2.1.0");
- assert.equal(sarif.runs[0].tool.driver.rules.length,10);
+ assert.equal(sarif.runs[0].tool.driver.rules.length,11);
  assert.equal(sarif.runs[0].results.length,4);
  assert.equal(sarif.runs[0].results[0].locations[0].physicalLocation.region.startLine,2);
 });
@@ -91,4 +91,14 @@ test("CSV export neutralizes spreadsheet formula filenames",()=>{
  const r=reportOf([{name:'=HYPERLINK("https://invalid.example")',content:'println(1)'}]);
  const csv=toCsv(r);
  assert.ok(csv.includes('"'+"'"+'=HYPERLINK('));
+});
+
+test("Jira 10.4 search API deprecation is version scoped",()=>{
+ const content='import com.atlassian.jira.issue.search.SearchProvider';
+ const files=[{name:"compat.groovy",content}];
+ assert.equal(reportOf(files).findings.length,0);
+ assert.equal(reportOf(files,[],{jiraVersion:"10.3"}).findings.length,0);
+ const r=reportOf(files,[],{jiraVersion:"10.4+"});
+ assert.deepEqual(r.findings.map(f=>f.rule),["JSA011"]);
+ assert.equal(r.target_jira,"10.4+");
 });
