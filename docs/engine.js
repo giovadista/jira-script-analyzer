@@ -67,10 +67,9 @@ function location(starts,offset){
   }
   return {line:high+1,column:offset-starts[high]+1};
 }
-function suppressed(source,ruleId,line){
+function suppressed(lines,ruleId,line){
   // Inline suppression of the exact rule: // jsa-ignore JSA003
   // Directives work on their own line (next line) or on the finding's line.
-  const lines=source.split(/\r?\n/);
   const current=lines[line-1]||"";
   const previous=lines[line-2]||"";
   const directive=new RegExp("//\\s*jsa-ignore\\s+"+ruleId+"(?:\\b|$)","i");
@@ -82,6 +81,7 @@ export function analyze(source,filename="script.groovy",disabled=[]){
   const masked=maskNonCode(source);
   const ignored=new Set(disabled);
   const starts=lineIndex(source);
+  const lines=source.split(/\r?\n/);
   const results=[];
   for(const rule of RULES){
     if(ignored.has(rule.id))continue;
@@ -92,7 +92,7 @@ export function analyze(source,filename="script.groovy",disabled=[]){
       // For credential rules confirm the variable identifier begins in executable code.
       if(rule.raw&&masked[offset]===" ")continue;
       const loc=location(starts,offset);
-      if(suppressed(source,rule.id,loc.line))continue;
+      if(suppressed(lines,rule.id,loc.line))continue;
       results.push({file:filename,...loc,rule:rule.id,severity:rule.severity,
                     category:rule.category,message:rule.label,help:rule.help});
     }
