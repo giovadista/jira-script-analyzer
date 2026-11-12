@@ -14,6 +14,17 @@ This project is an **offline heuristic** that flags patterns for human review. I
 | JSA008 | MEDIUM | Reliability | Broad exception catches can hide failures | Catch specific exceptions and handle failures explicitly |
 | JSA009 | MEDIUM | Security | Process execution may be dangerous in shared environments | Avoid shell execution where possible; never pass untrusted inputs |
 | JSA010 | LOW | Privacy | Debug logs can leak sensitive data or produce excessive logging | Review level, retention and payload contents |
+| JSA011 | MEDIUM | Jira compatibility | SearchProvider is deprecated for removal in Jira DC 10.4+ | Check migration guidance and Jira version before changing code |
+
+## Jira Data Center version-aware checks
+
+Select **Jira 10.4–10.x** in the web application (or use `--jira-version '10.4+'` with the Python CLI) to enable JSA011. The generic and 10.3-or-earlier profiles do not show this warning.
+
+Atlassian documents `com.atlassian.jira.issue.search.SearchProvider` as **deprecated since Jira 10.4, for removal**, and points users toward `IssueDocumentSearchService`. This is **not** a claim that the class is absent or removed in 10.4. Check the appropriate migration approach for your application's use case.
+
+Source: [Official Jira 10.5 API documentation — SearchProvider](https://docs.atlassian.com/software/jira/docs/api/10.5.0/com/atlassian/jira/issue/search/SearchProvider.html).
+
+The version selector is a hinting profile, not an exhaustive compatibility test. Always verify exact Jira and ScriptRunner versions.
 
 ## Suppressing an intentional finding
 
