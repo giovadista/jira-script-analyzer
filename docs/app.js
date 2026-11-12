@@ -6,7 +6,7 @@ const selectedFiles=[];
 for(const rule of RULES){
   const label=document.createElement("label");
   const cb=document.createElement("input");cb.type="checkbox";cb.checked=true;cb.value=rule.id;
-  label.append(cb,document.createTextNode(rule.id+" · "+rule.label));el("rules").append(label);
+  label.append(cb,document.createTextNode(rule.id+" · "+rule.label+(rule.target?" [Jira "+rule.target+"]":"")));el("rules").append(label);
 }
 el("sample").addEventListener("click",()=>{el("source").value=SAMPLE;el("files").value="";el("fileLabel").textContent="No files selected";selectedFiles.length=0;el("error").hidden=true;});
 el("clear").addEventListener("click",()=>{el("source").value="";el("files").value="";selectedFiles.length=0;el("fileLabel").textContent="No files selected";report=null;el("severityFilter").value="ALL";el("search").value="";render();el("error").hidden=true;});
@@ -31,7 +31,7 @@ el("run").addEventListener("click",async()=>{
       files.push({name:"pasted-script.groovy",content});
     }
     const disabled=[...el("rules").querySelectorAll('input[type="checkbox"]:not(:checked)')].map(c=>c.value);
-    report=reportOf(files,disabled);
+    report=reportOf(files,disabled,{jiraVersion:el("jiraVersion").value});
     el("severityFilter").value="ALL";el("search").value="";render();
   }catch(error){el("error").textContent=error.message;el("error").hidden=false;}
 });
@@ -56,7 +56,7 @@ el("downloadSarif").addEventListener("click",()=>{
 function render(){
   for(const id of ["total","high","medium","low"])el(id).textContent=report?(id==="total"?report.findings.length:report.counts[id.toUpperCase()]):"—";
   for(const button of outputButtons)el(button).disabled=!report;
-  el("scanSummary").textContent=report?report.files_scanned+" script(s) analyzed entirely in your browser.":"Run an analysis to see results.";
+  el("scanSummary").textContent=report?report.files_scanned+" script(s) analyzed locally. Target: "+report.target_jira+".":"Run an analysis to see results.";
   const tbody=el("findings");tbody.replaceChildren();
   const query=el("search").value.toLocaleLowerCase().trim();
   const filtered=report?.findings.filter(f=>(el("severityFilter").value==="ALL"||f.severity===el("severityFilter").value)&&
