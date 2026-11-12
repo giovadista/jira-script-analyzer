@@ -18,7 +18,7 @@ The browser interface is in [docs/index.html](docs/index.html). It is a static a
 
 Note: This Pages address will not work until Pages is enabled and the first deployment succeeds. Keep employer/client code out of the public repository. The browser app can process local files, but workplace policy still applies.
 
-**Browser features:** paste Groovy; select up to 30 local `.groovy` files (1 MB each); enable/disable individual rules; filter and search findings; see rule-specific review guidance; export JSON, HTML, CSV or SARIF reports. For deliberate exceptions, add `// jsa-ignore JSA003` on the finding line or on a standalone comment line immediately before it. The browser and Python analyzers use independently implemented heuristic checks and may differ in edge cases.
+**Browser features:** choose the Jira DC version profile, paste Groovy; select up to 30 local `.groovy` files (1 MB each); enable/disable individual rules; filter and search findings; see rule-specific review guidance; export JSON, HTML, CSV or SARIF reports. For deliberate exceptions, add `// jsa-ignore JSA003` on the finding line or on a standalone comment line immediately before it. The browser and Python analyzers use independently implemented heuristic checks and may differ in edge cases.
 
 **Browser engine tests:** GitHub Actions runs `npm test` with Node.js. Node is needed only to develop/test the browser engine outside GitHub; end users do not install anything.
 
@@ -41,7 +41,7 @@ Open the generated `report.html` in a browser. Pass a directory to recursively s
 ```bash
 python analyzer.py /path/to/groovy --format json --output report.json
 python analyzer.py /path/to/groovy --disable JSA003
-python analyzer.py /path/to/groovy --format sarif --output report.sarif
+python analyzer.py /path/to/groovy --jira-version "10.4+" --format sarif --output report.sarif
 python analyzer.py /path/to/groovy --format csv --output report.csv
 python analyzer.py /path/to/groovy --fail-on high
 ```
@@ -62,6 +62,7 @@ Exit codes: `0` means scan completed without reaching the configured fail thresh
 | JSA008 | MEDIUM | Broad `catch (Exception/Throwable)` |
 | JSA009 | MEDIUM | Process execution through Runtime/ProcessBuilder |
 | JSA010 | LOW | Potentially sensitive debug logging |
+| JSA011 | MEDIUM | Jira 10.4+ deprecation warning for SearchProvider |
 
 See [Rule catalog](docs/RULES.md) for explanations, remediation ideas and limitations. Rules are **review hints**, not proofs of security vulnerabilities or API obsolescence. JavaScript and Python implementations are similar but may differ on edge cases.
 
@@ -89,7 +90,7 @@ Run `python -m unittest discover -s tests -v`. GitHub Actions runs tests on Pyth
 
 ## Project maturity and Alignerr applications
 
-This is a newly created **v0.4 working prototype** with a roadmap. It has not yet demonstrated a substantial ongoing development history. Any external application must accurately describe its actual maturity, ownership, and the author's hands-on role.
+This is a newly created **v0.5 working prototype** with a roadmap. It has not yet demonstrated a substantial ongoing development history. Any external application must accurately describe its actual maturity, ownership, and the author's hands-on role.
 
 ## License
 
