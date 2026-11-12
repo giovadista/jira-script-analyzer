@@ -16,6 +16,7 @@
         <label for="source">Groovy code</label>
         <textarea id="source" spellcheck="false" aria-label="Groovy source" placeholder="// Paste a Groovy script here..." rows="17"></textarea>
         <div class="fileline"><label for="files" class="filebutton">Choose .groovy files</label><input id="files" type="file" accept=".groovy,text/plain" multiple><span id="fileLabel">No files selected</span></div>
+        <div class="fileline"><label for="jiraVersion">Target Jira Data Center</label><select id="jiraVersion"><option value="generic">Generic / unknown</option><option value="10.3">Jira 10.3 or earlier</option><option value="10.4+">Jira 10.4–10.x</option></select></div>
         <fieldset><legend>Checks to run</legend><div id="rules" class="checks"></div></fieldset>
         <div class="actions"><button id="run" type="button" class="primary">Analyze script</button><button id="clear" type="button" class="secondary">Clear</button></div>
         <p id="error" role="alert" class="error" hidden></p>
