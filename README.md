@@ -1,38 +1,75 @@
 # Jira Script Analyzer
 
-An early-stage, offline proof of concept for rule-based checks of Groovy scripts used with Jira ScriptRunner. **This is not a Groovy parser or a full security scanner.** Findings are heuristic and may include false positives or miss issues.
+[![Python tests](https://github.com/giovadista/jira-script-analyzer/actions/workflows/tests.yml/badge.svg)](https://github.com/giovadista/jira-script-analyzer/actions/workflows/tests.yml)
+
+An **offline, open-source, heuristic static analyzer** for Groovy scripts used in Jira ScriptRunner. This project is independent of Atlassian and Adaptavist.
+
+> **Prototype warning:** This is not a full Groovy parser or security audit. It does not execute scripts or contact Jira. Findings are best-effort, and false positives or negatives are possible.
 
 ## Requirements
 
-Python 3.10+; no third-party dependencies.
+Python 3.10 or newer; no third-party dependencies.
 
-## Run
+## Get started
 
 ```bash
 python analyzer.py examples/demo.groovy
-python analyzer.py examples --output report.json
+python analyzer.py examples --format html --output report.html
 python -m unittest discover -s tests -v
 ```
 
-## Current rules
+Open the generated `report.html` in a browser. Pass a directory to recursively scan its `.groovy` files.
 
-- `JSA001`: possible hard-coded credentials
-- `JSA002`: blocking `Thread.sleep`
-- `JSA003`: `println` instead of structured logging
-- `JSA004`: review unbounded `getIssues()` calls
+## Command-line usage
+
+```bash
+python analyzer.py /path/to/groovy --format json --output report.json
+python analyzer.py /path/to/groovy --disable JSA003
+python analyzer.py /path/to/groovy --fail-on high
+```
+
+Exit codes: `0` means scan completed without reaching the configured fail threshold; `1` means findings reached `--fail-on`; `2` means input or output error.
+
+## Built-in rules
+
+| Rule | Severity | Finding |
+| --- | --- | --- |
+| JSA001 | HIGH | Possible hard-coded credential |
+| JSA002 | MEDIUM | Blocking `Thread.sleep` |
+| JSA003 | LOW | `println` instead of logging |
+| JSA004 | MEDIUM | Potentially unbounded `getIssues()` |
+| JSA005 | MEDIUM | Direct SQL `executeQuery` / `executeUpdate` |
+| JSA006 | LOW | `System.out` / `printStackTrace` |
+| JSA007 | MEDIUM | Direct `URL` / `HttpURLConnection` creation |
+
+The scanner masks simple Groovy comments, quoted strings, and triple-quoted strings before most rules are applied. Credential matches are checked against the original text but ignored inside comments. **Limitations:** slashy/dollar-slashy strings, nested interpolation, and complex Groovy constructs are not fully handled. Rules are heuristic: a flagged pattern is not necessarily unsafe.
+
+## Output
+
+JSON reports include `schema_version`, `files_scanned`, counts per severity, and findings with file, line, column, rule, severity and message. HTML reports are standalone, and variable content is escaped.
+
+Directory scans exclude typical build and tool directories: `.git`, `.venv`, `venv`, `node_modules`, `build`, `target`.
 
 ## Roadmap
 
-- Ignore comments and string literals where appropriate
-- Configurable rule severity and suppressions
-- HTML reports and CI integration
-- Jira-specific API compatibility rules validated against official docs
-- Larger synthetic test fixture set
+- Better tokenization for slashy and dollar-slashy strings
+- Configurable rules, suppression comments and exclude patterns
+- Verified Jira and ScriptRunner API checks
+- SARIF export for code-scanning workflows
+- More representative synthetic test fixtures and a small dashboard
 
-## Privacy and ownership
+## Privacy and responsible use
 
-Only upload code you own or have explicit permission to publish. Never upload production scripts, tokens, customer information, or company-confidential material.
+Upload only source code you own or have explicit permission to release. **Never commit client/employer scripts, customer information or real credentials.** Example scripts are synthetic. Scanning is local-only and does not transmit source code.
 
-## Status
+## Development and CI
 
-Starter prototype. Not yet a substantial project for a job application requiring an actively maintained GitHub repository.
+Run `python -m unittest discover -s tests -v`. GitHub Actions runs tests on Python 3.10, 3.12 and 3.13 after pushes and pull requests. Issues and constructive pull requests are welcome.
+
+## Project maturity and Alignerr applications
+
+This is a newly created **working prototype** with a roadmap. It has not yet demonstrated a substantial ongoing development history. Any external application must accurately describe its actual maturity, ownership, and the author's hands-on role.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
