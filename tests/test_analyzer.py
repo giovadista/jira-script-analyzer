@@ -2,7 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from analyzer import analyze, main, mask_non_code, render_html, scan
+from analyzer import analyze, main, mask_non_code, render_html, scan, to_csv, to_sarif, RULES, VERSION
 
 class LexerTests(unittest.TestCase):
     def test_comments_and_strings(self):
@@ -14,15 +14,33 @@ class LexerTests(unittest.TestCase):
         self.assertEqual([(f.rule, f.line) for f in analyze(text, 'test.groovy')], [('JSA002', 4)])
         self.assertEqual(len(mask_non_code(text)), len(text))
 
+    def test_nested_block_comment(self):
+        text = "/* outer /* inner */ println(1) */\nprintln(2)"
+        self.assertEqual([f.line for f in analyze(text, 'test.groovy')], [2])
+
     def test_credentials_and_comment(self):
         source = '// password = "fake"\ndef apiToken = "demo"\n'
         self.assertEqual([(f.rule, f.line) for f in analyze(source, 'test.groovy')], [('JSA001', 2)])
+        self.assertNotIn("demo", str(analyze(source, "test.groovy")))
 
     def test_disabled_rule(self):
         self.assertEqual(analyze('println(1)', 'x.groovy', {'JSA003'}), [])
 
+    def test_suppression_previous_line(self):
+        s = '// jsa-ignore JSA003\nprintln("ignored")\nprintln("visible")'
+        self.assertEqual([f.line for f in analyze(s, 'x.groovy')], [3])
+
+    def test_inline_suppression(self):
+        s = 'println("ignored") // jsa-ignore JSA003\nprintln("visible")'
+        self.assertEqual([f.line for f in analyze(s, 'x.groovy')], [2])
+
+    def test_new_rules(self):
+        s = 'try {} catch (Exception e) {}\nnew ProcessBuilder("ls")\nlog.debug("hi")'
+        self.assertEqual([f.rule for f in analyze(s, 'x.groovy')], ['JSA008', 'JSA009', 'JSA010'])
+
     def test_clean_script(self):
-        self.assertEqual(analyze('log.info("ok")', 'x.groovy'), [])
+        self.assertEqual(analyze('log.info("hello")', 'clean.groovy'), [])
+
 
 class ScanTests(unittest.TestCase):
     def test_scan_skips_ignored_directories(self):
@@ -55,8 +73,28 @@ class ScanTests(unittest.TestCase):
             self.assertEqual(main([str(script), '--format', 'html', '--output', str(page)]), 0)
             self.assertIn('<table>', page.read_text())
 
+    def test_csv_and_sarif(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            script = root / 'demo.groovy'
+            script.write_text('println("ok")', encoding='utf-8')
+            report = scan(script)
+            self.assertIn('JSA003', to_csv(report))
+            self.assertEqual(to_sarif(report)['version'], '2.1.0')
+            self.assertEqual(to_sarif(report)['runs'][0]['results'][0]['ruleId'], 'JSA003')
+            csv_file = root / 'report.csv'
+            sarif_file = root / 'report.sarif'
+            self.assertEqual(main([str(script), '--format', 'csv', '--output', str(csv_file)]), 0)
+            self.assertEqual(main([str(script), '--format', 'sarif', '--output', str(sarif_file)]), 0)
+            self.assertEqual(json.loads(sarif_file.read_text())['version'], '2.1.0')
+
     def test_missing_path(self):
         self.assertEqual(main(['this-file-does-not-exist.groovy']), 2)
+
+    def test_documented_rules(self):
+        self.assertEqual(VERSION, '0.4.0')
+        self.assertEqual(len(RULES), 10)
+
 
 if __name__ == '__main__':
     unittest.main()
