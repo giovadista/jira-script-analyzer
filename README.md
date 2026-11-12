@@ -1,6 +1,6 @@
 # Jira Script Analyzer
 
-[![Python tests](https://github.com/giovadista/jira-script-analyzer/actions/workflows/tests.yml/badge.svg)](https://github.com/giovadista/jira-script-analyzer/actions/workflows/tests.yml)
+[![Tests](https://github.com/giovadista/jira-script-analyzer/actions/workflows/tests.yml/badge.svg)](https://github.com/giovadista/jira-script-analyzer/actions/workflows/tests.yml)
 
 An **offline, open-source, heuristic static analyzer** for Groovy scripts used in Jira ScriptRunner. This project is independent of Atlassian and Adaptavist.
 
@@ -18,7 +18,7 @@ The browser interface is in [docs/index.html](docs/index.html). It is a static a
 
 Note: This Pages address will not work until Pages is enabled and the first deployment succeeds. Keep employer/client code out of the public repository. The browser app can process local files, but workplace policy still applies.
 
-**Browser features:** paste Groovy; select up to 30 local `.groovy` files (1 MB each); enable/disable individual rules; filter findings by severity; export a JSON report. The browser and Python analyzers use independently implemented heuristic checks and may differ in edge cases.
+**Browser features:** paste Groovy; select up to 30 local `.groovy` files (1 MB each); enable/disable individual rules; filter and search findings; see rule-specific review guidance; export JSON, CSV or SARIF reports. For deliberate exceptions, add `// jsa-ignore JSA003` on the finding line or on a standalone comment line immediately before it. The browser and Python analyzers use independently implemented heuristic checks and may differ in edge cases.
 
 **Browser engine tests:** GitHub Actions runs `npm test` with Node.js. Node is needed only to develop/test the browser engine outside GitHub; end users do not install anything.
 
@@ -41,6 +41,8 @@ Open the generated `report.html` in a browser. Pass a directory to recursively s
 ```bash
 python analyzer.py /path/to/groovy --format json --output report.json
 python analyzer.py /path/to/groovy --disable JSA003
+python analyzer.py /path/to/groovy --format sarif --output report.sarif
+python analyzer.py /path/to/groovy --format csv --output report.csv
 python analyzer.py /path/to/groovy --fail-on high
 ```
 
@@ -52,27 +54,30 @@ Exit codes: `0` means scan completed without reaching the configured fail thresh
 | --- | --- | --- |
 | JSA001 | HIGH | Possible hard-coded credential |
 | JSA002 | MEDIUM | Blocking `Thread.sleep` |
-| JSA003 | LOW | `println` instead of logging |
+| JSA003 | LOW | `println` instead of structured logging |
 | JSA004 | MEDIUM | Potentially unbounded `getIssues()` |
-| JSA005 | MEDIUM | Direct SQL `executeQuery` / `executeUpdate` |
+| JSA005 | MEDIUM | Review SQL `executeQuery` / `executeUpdate` |
 | JSA006 | LOW | `System.out` / `printStackTrace` |
-| JSA007 | MEDIUM | Direct `URL` / `HttpURLConnection` creation |
+| JSA007 | MEDIUM | Direct `URL` / `HttpURLConnection` |
+| JSA008 | MEDIUM | Broad `catch (Exception/Throwable)` |
+| JSA009 | MEDIUM | Process execution through Runtime/ProcessBuilder |
+| JSA010 | LOW | Potentially sensitive debug logging |
 
-The scanner masks simple Groovy comments, quoted strings, and triple-quoted strings before most rules are applied. Credential matches are checked against the original text but ignored inside comments. **Limitations:** slashy/dollar-slashy strings, nested interpolation, and complex Groovy constructs are not fully handled. Rules are heuristic: a flagged pattern is not necessarily unsafe.
+See [Rule catalog](docs/RULES.md) for explanations, remediation ideas and limitations. Rules are **review hints**, not proofs of security vulnerabilities or API obsolescence. JavaScript and Python implementations are similar but may differ on edge cases.
 
 ## Output
 
-JSON reports include `schema_version`, `files_scanned`, counts per severity, and findings with file, line, column, rule, severity and message. HTML reports are standalone, and variable content is escaped.
+JSON reports include schema version, counts, paths, positions and findings, but never source snippets. CSV is suitable for spreadsheets; SARIF 2.1.0 is available for code-scanning tooling; the Python CLI also generates standalone HTML. Source text is not embedded in the exported reports.
 
 Directory scans exclude typical build and tool directories: `.git`, `.venv`, `venv`, `node_modules`, `build`, `target`.
 
 ## Roadmap
 
-- Better tokenization for slashy and dollar-slashy strings
-- Configurable rules, suppression comments and exclude patterns
-- Verified Jira and ScriptRunner API checks
-- SARIF export for code-scanning workflows
-- More representative synthetic test fixtures and a small dashboard
+- Improve tokenization for Groovy slashy/dollar-slashy literals and GString interpolation
+- Add configurable severities, baseline comparison and ignore patterns
+- Add documented, version-scoped Jira and ScriptRunner API checks using official references
+- Add larger synthetic fixture packs and browser end-to-end tests
+- Establish release tags, regular maintenance, and real-world validation with authorized scripts
 
 ## Privacy and responsible use
 
@@ -84,7 +89,7 @@ Run `python -m unittest discover -s tests -v`. GitHub Actions runs tests on Pyth
 
 ## Project maturity and Alignerr applications
 
-This is a newly created **working prototype** with a roadmap. It has not yet demonstrated a substantial ongoing development history. Any external application must accurately describe its actual maturity, ownership, and the author's hands-on role.
+This is a newly created **v0.4 working prototype** with a roadmap. It has not yet demonstrated a substantial ongoing development history. Any external application must accurately describe its actual maturity, ownership, and the author's hands-on role.
 
 ## License
 
