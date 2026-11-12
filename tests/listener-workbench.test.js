@@ -54,7 +54,7 @@ test("complex listener maps safe reads and preserves manual write TODOs",()=>{
  assert.ok(r.steps.some(x=>x.rule==="LOOKUP-STATIC"&&x.disposition==="candidate"));
  assert.ok(r.steps.some(x=>x.rule==="FIELD-READ"&&x.disposition==="candidate"));
  assert.ok(r.steps.some(x=>x.rule==="ISSUE-WRITE"&&x.disposition==="manual"));
- assert.ok(r.steps.some(x=>x.rule==="FLOW"&&x.disposition==="structural"));
+ assert.ok(r.steps.some(x=>x.rule==="FLOW-EVENT"&&x.disposition==="structural"));
  assert.ok(r.controls.some(x=>x.id==="idempotency"));
 });
 test("line-level plan locates changes correctly",()=>{
@@ -114,4 +114,18 @@ test("listener input size and type limits enforced",()=>{
 test("no original source content appears in arbitrary manual steps",()=>{
  const r=analyzeListenerMigration('def token = "NEVERCOPY"\ncustomOperation(token)');
  assert.ok(!JSON.stringify(r).includes("NEVERCOPY"));
+});
+
+test("invalid structural source disables all Cloud candidate snippets",()=>{
+ const source='def issue = ComponentAccessor.getIssueManager().getIssueByCurrentKey("TEST-42")\nif (true) {';
+ const r=analyzeListenerMigration(source);
+ assert.ok(r.lexical_diagnostics.length>0);
+ assert.equal(r.steps.filter(x=>x.disposition==="candidate").length,0);
+ assert.equal(r.steps.filter(x=>x.snippet).length,0);
+ assert.ok(r.steps.some(x=>x.rule==="PARSE-BLOCKED"));
+});
+test("Forge event guard is explicitly recognized as context-sensitive",()=>{
+ const r=analyzeListenerMigration('if (event.issue != null) { log.info("ok") }');
+ assert.equal(r.steps[0].rule,"FLOW-EVENT");
+ assert.equal(r.steps[0].severity,"HIGH");
 });
