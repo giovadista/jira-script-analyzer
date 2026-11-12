@@ -125,3 +125,19 @@ export function toCsv(report){
   const fields=["file","line","column","rule","severity","category","message","help"];
   return [fields.map(esc).join(","),...report.findings.map(f=>fields.map(k=>esc(f[k])).join(","))].join("\r\n")+"\r\n";
 }
+
+export function toHtml(report){
+  const esc=value=>String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
+  const fields=["file","line","column","rule","severity","category","message","help"];
+  const rows=report.findings.map(f=>"<tr>"+fields.map(k=>"<td>"+esc(f[k])+"</td>").join("")+"</tr>").join("\n")||
+    '<tr><td colspan="8">No findings</td></tr>';
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
+    '<title>Jira Script Analyzer report</title><style>body{font-family:system-ui,sans-serif;color:#172b4d;margin:30px auto;max-width:1250px;padding:0 16px}'+
+    'table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #e4e9f2;padding:10px;text-align:left;vertical-align:top}'+
+    'th{background:#eff4fb}small{color:#52627d}</style></head><body><h1>Jira Script Analyzer report</h1>'+
+    '<p>'+esc(report.files_scanned)+' files · '+esc(report.findings.length)+' findings</p>'+
+    '<small>Heuristic source review only; findings must be validated manually. No source snippets included.</small>'+
+    '<table><thead><tr>'+fields.map(k=>"<th>"+esc(k)+"</th>").join("")+'</tr></thead><tbody>'+rows+
+    '</tbody></table></body></html>\n';
+}
