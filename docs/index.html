@@ -8,17 +8,30 @@
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <header class="wrap top"><div><p class="eyebrow">OPEN-SOURCE · LOCAL ANALYSIS</p><h1>Jira Script Analyzer</h1><p class="subtitle">Review Groovy ScriptRunner patterns without uploading source code.</p></div><a class="repo" href="https://github.com/giovadista/jira-script-analyzer" target="_blank" rel="noopener noreferrer">View source on GitHub ↗</a></header>
+  <header class="wrap top"><div><p class="eyebrow">OPEN-SOURCE · LOCAL ANALYSIS</p><h1>Jira Script Analyzer</h1><p class="subtitle">Review Jira Cloud automations, ScriptRunner scripts and Data Center migration dependencies without uploading source code.</p></div><a class="repo" href="https://github.com/giovadista/jira-script-analyzer" target="_blank" rel="noopener noreferrer">View source on GitHub ↗</a></header>
   <main class="wrap">
     <section class="privacy" role="note"><strong>Private by design:</strong> Scripts are analyzed only in your browser. No external API requests, accounts, or installations. Never enter employer or client code without permission. Heuristic findings require manual review.</section>
     <div class="layout">
-      <section class="panel"><div class="panelhead"><div><h2>Source</h2><p>Paste Groovy or select one or more local <code>.groovy</code> files.</p></div><button id="sample" type="button" class="secondary">Load example</button></div>
-        <label for="source">Groovy code</label>
+      <section class="panel"><div class="panelhead"><div><h2>Source</h2><p>Analyze Cloud automation exports, ScriptRunner code or Data Center migration candidates.</p></div><button id="sample" type="button" class="secondary">Load example</button></div>
+        <div class="fileline"><label for="analysisMode">Analysis mode</label>
+<select id="analysisMode">
+<option value="scriptrunner-cloud">Jira Cloud · ScriptRunner</option>
+<option value="automation-cloud">Jira Cloud · Automation JSON</option>
+<option value="dc-to-cloud">Data Center → Cloud · Migration assessment</option>
+<option value="data-center">Jira Data Center · Groovy analysis</option>
+</select></div>
+<div class="fileline" id="cloudLanguageRow"><label for="cloudLanguage">Script language</label><select id="cloudLanguage">
+<option value="groovy">Groovy (Listeners, Jobs, Scripted Fields)</option>
+<option value="javascript">JavaScript (Behaviours, Fragments)</option>
+<option value="typescript">TypeScript (Behaviours)</option>
+</select></div>
+<p id="modeHint" class="recommendation">Cloud ScriptRunner source review. Not a complete parser or compatibility certification.</p>
+<label for="source" id="sourceLabel">Script source</label>
         <textarea id="source" spellcheck="false" aria-label="Groovy source" placeholder="// Paste a Groovy script here..." rows="17"></textarea>
-        <div class="fileline"><label for="files" class="filebutton">Choose .groovy files</label><input id="files" type="file" accept=".groovy,text/plain" multiple><span id="fileLabel">No files selected</span></div>
-        <div class="fileline"><label for="jiraVersion">Target Jira Data Center</label><select id="jiraVersion"><option value="generic">Generic / unknown</option><option value="10.3">Jira 10.3 or earlier</option><option value="10.4+">Jira 10.4–10.x</option></select></div>
-        <fieldset><legend>Checks to run</legend><div id="rules" class="checks"></div></fieldset>
-        <div class="actions"><button id="run" type="button" class="primary">Analyze script</button><button id="clear" type="button" class="secondary">Clear</button></div>
+        <div class="fileline"><label for="files" class="filebutton">Choose files</label><input id="files" type="file" accept=".groovy,.js,.ts,.json,text/plain,application/json" multiple><span id="fileLabel">No files selected</span></div>
+        <div class="fileline" id="jiraVersionRow" hidden><label for="jiraVersion">Target Jira Data Center</label><select id="jiraVersion"><option value="generic">Generic / unknown</option><option value="10.3">Jira 10.3 or earlier</option><option value="10.4+">Jira 10.4–10.x</option></select></div>
+        <fieldset id="dcRules" hidden><legend>Data Center checks to run</legend><div id="rules" class="checks"></div></fieldset>
+        <div class="actions"><button id="run" type="button" class="primary">Run assessment</button><button id="clear" type="button" class="secondary">Clear</button></div>
         <p id="error" role="alert" class="error" hidden></p>
       </section>
       <section class="panel results" aria-live="polite"><div class="panelhead"><div><h2>Findings</h2><p id="scanSummary">Run an analysis to see results.</p></div></div>
