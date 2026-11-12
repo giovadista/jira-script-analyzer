@@ -48,6 +48,19 @@
             <button id="downloadListenerJson" class="secondary" type="button" disabled>Download map .json</button>
           </div>
           <h3 class="workbench-heading">Line-by-line migration tasks</h3>
+          <div class="fileline">
+            <label for="listenerDisposition">Show</label>
+            <select id="listenerDisposition">
+              <option value="ALL">All operations</option>
+              <option value="candidate">Cloud candidate</option>
+              <option value="manual">Manual rewrite</option>
+              <option value="remove">DC dependency to remove</option>
+              <option value="structural">Control flow</option>
+              <option value="template">Cloud template</option>
+            </select>
+            <label for="listenerTaskSearch">Search</label>
+            <input id="listenerTaskSearch" type="search" placeholder="API, category, rule, line...">
+          </div>
           <div class="tablewrap"><table class="workbench-table"><thead><tr><th>DC line</th><th>Treatment</th><th>Operation and guidance</th></tr></thead>
             <tbody id="listenerSteps"><tr><td colspan="3" class="empty">Run the listener migration assessment</td></tr></tbody></table></div>
         </section>
