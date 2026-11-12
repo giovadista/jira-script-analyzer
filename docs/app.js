@@ -1,5 +1,6 @@
 import {RULES,SAMPLE,reportOf,toSarif,toCsv,toHtml} from "./engine.js";
 import {analyzeCloudFiles,analyzeAutomationJson,assessMigration} from "./cloud.js";
+import {convertDcScript} from "./converter.js";
 const el=id=>document.getElementById(id);
 let report=null;
 const outputButtons=["download","downloadHtml","downloadCsv","downloadSarif"];
@@ -13,24 +14,30 @@ const MODE_EXAMPLES={
  "scriptrunner-cloud":'// Synthetic ScriptRunner Cloud example\nimport com.atlassian.jira.component.ComponentAccessor\n// DC-only code above is not available in Cloud scripts\nget("/rest/api/3/issue/DEMO-1").asObject(Map)\n',
  "automation-cloud":JSON.stringify({rules:[{name:"Synthetic example",state:"DISABLED",components:[{type:"ACTION",value:"send-web-request",configuration:{field:"customfield_10001",owner:"sample-account"}}]}]},null,2),
  "dc-to-cloud":'// Synthetic DC listener to assess before Jira Cloud migration\nimport com.atlassian.jira.component.ComponentAccessor\nimport java.io.File\n// Review Jira API dependencies, filesystem access and username-based user lookups\ndef issueManager = ComponentAccessor.issueManager\n',
+ "dc-converter":'import com.atlassian.jira.component.ComponentAccessor\ndef issue = ComponentAccessor.getIssueManager().getIssueByCurrentKey("TEST-123")',
  "data-center":SAMPLE
 };
 const hints={
  "scriptrunner-cloud":"Cloud script source patterns, including REST authentication and legacy Data Center Java dependencies. Not a parser or runtime validator.",
  "automation-cloud":"Load a Jira Cloud Automation JSON export. Identifies review candidates; does not execute/import rules or expose field values.",
  "dc-to-cloud":"Assess Groovy scripts for Java API, host access, identity and ScriptRunner parity indicators. This is NOT an automatic effort estimate.",
+ "dc-converter":"Experimental conservative converter: generates Cloud candidates only for recognized, isolated Groovy patterns. Other inputs require manual migration.",
  "data-center":"Existing offline Jira Data Center Groovy scanner and version-specific rules."
 };
 function updateMode(){
  const mode=el("analysisMode").value;
  el("cloudLanguageRow").hidden=mode!=="scriptrunner-cloud";
+ el("converterPanel").hidden=mode!=="dc-converter";
+ el("convertedCode").value="";el("conversionStatus").textContent="No conversion attempted.";
+ el("conversionNotices").replaceChildren();
+ el("copyConverted").disabled=true;el("downloadConverted").disabled=true;
  el("jiraVersionRow").hidden=mode!=="data-center";
  el("dcRules").hidden=mode!=="data-center";
  el("modeHint").textContent=hints[mode];
  el("sourceLabel").textContent=mode==="automation-cloud"?"Automation export JSON":"Script source";
  el("source").placeholder=mode==="automation-cloud"?"Paste an Automation JSON export...":"Paste script source...";
  el("files").accept=mode==="automation-cloud"?".json,application/json":mode==="scriptrunner-cloud"?".groovy,.js,.ts,text/plain":".groovy,text/plain";
- el("files").multiple=mode!=="automation-cloud";
+ el("files").multiple=!["automation-cloud","dc-converter"].includes(mode);
  el("source").value="";
  el("files").value="";
  selectedFiles.length=0;
@@ -59,7 +66,7 @@ el("run").addEventListener("click",async()=>{
    const language=el("cloudLanguage").value;
    const files=[];
    if(selectedFiles.length){
-     if(selectedFiles.length>(mode==="automation-cloud"?1:30))throw new Error("Too many files selected for this analysis mode.");
+     if(selectedFiles.length>(["automation-cloud","dc-converter"].includes(mode)?1:30))throw new Error("Too many files selected for this analysis mode.");
      for(const file of selectedFiles){
        const suffixes=mode==="automation-cloud"?[".json"]:
          mode==="scriptrunner-cloud"?[".groovy",".js",".ts"]:[".groovy"];
@@ -74,7 +81,17 @@ el("run").addEventListener("click",async()=>{
      if(content.length>(mode==="automation-cloud"?5:1)*1024*1024)throw new Error("Input exceeds safe browser size limit.");
      files.push({name:mode==="automation-cloud"?"pasted-automation.json":mode==="scriptrunner-cloud"?"pasted-cloud."+({groovy:"groovy",javascript:"js",typescript:"ts"}[language]):"pasted-script.groovy",content});
    }
-   if(mode==="automation-cloud")report=analyzeAutomationJson(files[0].content,files[0].name);
+   if(mode==="dc-converter"){
+     const converted=convertDcScript(files[0].content,el("executionContext").value);
+     el("convertedCode").value=converted.generated_code;
+     el("conversionStatus").textContent=converted.status==="candidate"?"Conversion candidate generated — unverified.":"Automatic conversion unavailable — manual review required.";
+     const notice=el("conversionNotices");notice.replaceChildren();
+     for(const message of converted.notices){const p=document.createElement("p");p.textContent=message;notice.append(p);}
+     for(const reference of converted.references){const link=document.createElement("a");link.href=reference.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent=reference.label;notice.append(link,document.createTextNode(" · "));}
+     el("copyConverted").disabled=false;el("downloadConverted").disabled=false;
+     report=assessMigration(files);
+   }
+   else if(mode==="automation-cloud")report=analyzeAutomationJson(files[0].content,files[0].name);
    else if(mode==="dc-to-cloud")report=assessMigration(files);
    else if(mode==="scriptrunner-cloud")report=analyzeCloudFiles(files,language);
    else{
@@ -98,6 +115,14 @@ el("downloadHtml").addEventListener("click",()=>{
 });
 el("downloadCsv").addEventListener("click",()=>{
   if(report)downloadFile(toCsv(report),"jira-script-analyzer-report.csv","text/csv;charset=utf-8");
+});
+el("copyConverted").addEventListener("click",async()=>{
+ if(el("convertedCode").value)try{await navigator.clipboard.writeText(el("convertedCode").value);}catch{
+   el("convertedCode").select();document.execCommand("copy");
+ }
+});
+el("downloadConverted").addEventListener("click",()=>{
+ if(el("convertedCode").value)downloadFile(el("convertedCode").value,"cloud-conversion-candidate.groovy","text/plain;charset=utf-8");
 });
 el("downloadSarif").addEventListener("click",()=>{
   if(report)downloadFile(JSON.stringify(toSarif(report),null,2)+"\n","jira-script-analyzer.sarif","application/sarif+json");
