@@ -25,7 +25,7 @@ export function tokenizeGroovy(source){
   if(typeof source!=="string")throw new TypeError("Groovy source must be text.");
   if(source.length>MAX_SOURCE)throw new Error("Source exceeds the 1 MB limit.");
   const tokens=[],diagnostics=[],mask=source.split("");
-  let i=0,line=1,col=1;
+  let i=0,line=1,col=1,lastNonNewline=null;
   const advance=end=>{
     while(i<end){
       if(source[i]==="\n"){line++;col=1;}else col++;
@@ -37,7 +37,8 @@ export function tokenizeGroovy(source){
   };
   const emit=(type,start,end,value)=>{
     if(tokens.length>=MAX_TOKENS)throw new Error("Too many Groovy tokens; split the script.");
-    tokens.push({type,start,end,line,column:col,value});
+    const token={type,start,end,line,column:col,value};tokens.push(token);
+    if(type!=="newline")lastNonNewline=token;
     advance(end);
   };
   while(i<source.length){
@@ -78,7 +79,7 @@ export function tokenizeGroovy(source){
     // Slashy Groovy regex only in unambiguous expression positions, e.g. def r = /.../
     // Ambiguous divisions are left as symbols and never automatically rewritten.
     if(c==="/"&&tokens.length){
-      const previous=[...tokens].reverse().find(t=>t.type!=="newline");
+      const previous=lastNonNewline;
       const couldStart=previous&&(["=","(","[",":",",","return"].includes(previous.value));
       if(couldStart){
         let j=i+1,closed=false;
@@ -128,7 +129,9 @@ export function segmentGroovy(source){
     if(t.type==="newline"){
       if(!part.length)continue;
       const previous=part[part.length-1];
-      const next=lex.tokens.slice(index+1).find(x=>x.type!=="newline");
+      let nextIndex=index+1;
+      while(nextIndex<lex.tokens.length&&lex.tokens[nextIndex].type==="newline")nextIndex++;
+      const next=lex.tokens[nextIndex];
       if(paren===0&&square===0&&!PREV_CONTINUATION.has(previous.value)&&
          (!next||!NEXT_CONTINUATION.has(next.value)))emit();
       continue;
