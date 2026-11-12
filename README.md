@@ -6,6 +6,22 @@ An **offline, open-source, heuristic static analyzer** for Groovy scripts used i
 
 > **Prototype warning:** This is not a full Groovy parser or security audit. It does not execute scripts or contact Jira. Findings are best-effort, and false positives or negatives are possible.
 
+## Browser app (no installation)
+
+The browser interface is in [docs/index.html](docs/index.html). It is a static application powered by `docs/engine.js`; your code is analyzed **locally in the browser**. No source code is transmitted to a server. There are no analytics or external JavaScript dependencies.
+
+**GitHub Pages setup (repository owner):**
+1. Open **Settings → Pages** in this repository.
+2. Under **Build and deployment**, select **Deploy from a branch**.
+3. Choose branch **main**, folder **/docs**, then **Save**.
+4. When GitHub finishes publishing, open **https://giovadista.github.io/jira-script-analyzer/**.
+
+Note: This Pages address will not work until Pages is enabled and the first deployment succeeds. Keep employer/client code out of the public repository. The browser app can process local files, but workplace policy still applies.
+
+**Browser features:** paste Groovy; select up to 30 local `.groovy` files (1 MB each); enable/disable individual rules; filter findings by severity; export a JSON report. The browser and Python analyzers use independently implemented heuristic checks and may differ in edge cases.
+
+**Browser engine tests:** GitHub Actions runs `npm test` with Node.js. Node is needed only to develop/test the browser engine outside GitHub; end users do not install anything.
+
 ## Requirements
 
 Python 3.10 or newer; no third-party dependencies.
