@@ -1,0 +1,11 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {analyze, maskNonCode, reportOf, RULES, SAMPLE} from "../docs/engine.js";
+test("7 implemented rules",()=>assert.equal(RULES.length,7));
+test("sample yields 4 findings",()=>assert.deepEqual(analyze(SAMPLE,"demo.groovy").map(x=>x.rule),["JSA001","JSA003","JSA002","JSA004"]));
+test("comments and strings are ignored",()=>assert.deepEqual(analyze('// println(1)\n/* Thread.sleep(2) */\ndef x = "println(3)"',"a.groovy"),[]));
+test("triple quoted string ignored",()=>assert.deepEqual(analyze("'''println(1)'''\nprintln(2)","a.groovy").map(x=>x.line),[2]));
+test("raw credentials in comments ignored",()=>assert.deepEqual(analyze('// password = "fake"\npassword = "demo"',"a.groovy").map(x=>x.line),[2]));
+test("disabled rule",()=>assert.equal(analyze("println(1)","a.groovy",["JSA003"]).length,0));
+test("mask preserves newlines and indices",()=>{const s='println("ok")\n// comment';assert.equal(maskNonCode(s).length,s.length);assert.equal(maskNonCode(s).split("\n").length,2);});
+test("report schema and counts",()=>{const report=reportOf([{name:"a.groovy",content:SAMPLE}]);assert.equal(report.files_scanned,1);assert.equal(report.counts.HIGH,1);});
