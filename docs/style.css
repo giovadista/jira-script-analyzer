@@ -11,3 +11,15 @@ td strong{font-weight:680}
 #analysisMode{max-width:100%}
 #modeHint{margin:4px 0 18px}
 .results td small{display:block;margin-top:8px;color:#56677d}
+
+/* Listener Migration Workbench */
+.dividerline{height:1px;background:#dce5f1;margin:24px 0}
+.workbench-heading{font-size:1rem;margin:22px 0 10px}
+.workbench-table{min-width:540px}
+.workbench-table td:nth-child(1){width:85px}
+.workbench-table td:nth-child(2){width:110px;text-transform:capitalize;font-weight:600}
+.workbench-jump{border:1px solid #c9d6e8;background:#edf3fd;color:#2253a1;border-radius:6px;padding:6px 8px;font-size:.82rem}
+.workbench-jump:hover{background:#dcecff}
+#listenerBlueprint{min-height:250px}
+#listenerPanel .actions{margin:15px 0}
+#listenerPanel .recommendation{margin:6px 0 14px}
