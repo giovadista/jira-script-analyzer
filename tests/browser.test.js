@@ -86,3 +86,9 @@ test("line index handles a large input without changing positions",()=>{
  const f=analyze(source,"long.groovy");
  assert.equal(f.length,1);assert.equal(f[0].line,2501);assert.equal(f[0].column,1);
 });
+
+test("CSV export neutralizes spreadsheet formula filenames",()=>{
+ const r=reportOf([{name:'=HYPERLINK("https://invalid.example")',content:'println(1)'}]);
+ const csv=toCsv(r);
+ assert.ok(csv.includes('"'+"'"+'=HYPERLINK('));
+});
