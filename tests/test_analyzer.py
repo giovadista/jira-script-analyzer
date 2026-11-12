@@ -88,6 +88,11 @@ class ScanTests(unittest.TestCase):
             self.assertEqual(main([str(script), '--format', 'sarif', '--output', str(sarif_file)]), 0)
             self.assertEqual(json.loads(sarif_file.read_text())['version'], '2.1.0')
 
+    def test_csv_formula_neutralization(self):
+        report = {'findings': [{'file': '=HYPERLINK("test")', 'line': 1,
+                   'column': 1, 'rule': 'JSA003', 'severity': 'LOW', 'message': 'demo'}]}
+        self.assertIn("'=HYPERLINK", to_csv(report))
+
     def test_missing_path(self):
         self.assertEqual(main(['this-file-does-not-exist.groovy']), 2)
 
